@@ -46,15 +46,42 @@ function initFirebase(){
   try{
     firebaseApp=firebase.apps.length?firebase.app():firebase.initializeApp(window.THROW_FIREBASE_CONFIG);
     auth=firebase.auth();db=firebase.database();
-    authReadyPromise=new Promise(resolve=>{
+    authReadyPromise=new Promise((resolve,reject)=>{
+      let settled=false;
       const unsubscribe=auth.onAuthStateChanged(user=>{
         currentUid=user?user.uid:null;
-        if(user){ unsubscribe(); resolve(user); if(!hostMode) subscribeToRoom(); }
+        if(user && !settled){
+          settled=true;
+          unsubscribe();
+          resolve(user);
+          if(!hostMode) subscribeToRoom();
+        }
+      }, err=>{
+        if(!settled){
+          settled=true;
+          unsubscribe();
+          reject(err);
+        }
       });
+      window.__throwAuthTimer=setTimeout(()=>{
+        if(!settled){
+          settled=true;
+          unsubscribe();
+          const err=new Error('Firebase authentication timed out. Add your deployed domain to Firebase Authentication > Settings > Authorized domains.');
+          err.code='auth/timeout';
+          reject(err);
+        }
+      },10000);
     });
     auth.signInAnonymously().catch(err=>{
       console.error('Anonymous auth failed',err);
-      setLiveStatus('Anonymous sign-in failed: '+(err.code||err.message||'check Firebase Authentication'));
+      const code=err.code||'auth/unknown';
+      let msg=code;
+      if(code==='auth/unauthorized-domain') msg='This deployed domain is not authorized in Firebase. Add it under Authentication → Settings → Authorized domains.';
+      else if(code==='auth/operation-not-allowed') msg='Anonymous Authentication is not enabled in Firebase.';
+      else if(code==='auth/network-request-failed') msg='Firebase authentication network request failed. Check the deployed site connection.';
+      setLiveStatus('Firebase login failed: '+msg);
+      toast('Firebase login failed — see Live room status.');
     });
     return true;
   }catch(e){console.error(e);setLiveStatus('Firebase error: '+(e.code||e.message||'check firebase-config.js'));return false}
@@ -69,16 +96,21 @@ async function createLiveRoom(){
   if(!firebaseReady() || !db){setLiveStatus('Firebase is not ready. Check firebase-config.js and reload.');return}
   try{
     if(authReadyPromise && !currentUid) await authReadyPromise;
-    if(!currentUid){setLiveStatus('Waiting for Firebase sign-in…');return}
-    roomId=makeRoomId();hostMode=true;history.replaceState(null,'',location.pathname+'?room='+encodeURIComponent(roomId));
+    if(!currentUid){setLiveStatus('Firebase login has not completed. Reload and check Authentication → Settings → Authorized domains.');return}
+    roomId=makeRoomId();
     roomRef=db.ref('rooms/'+roomId);
-    await roomRef.set({hostUid:currentUid,state:JSON.parse(state()),createdAt:firebase.database.ServerValue.TIMESTAMP});
+    const initialState=JSON.parse(state());
+    await roomRef.set({hostUid:currentUid,state:initialState,createdAt:firebase.database.ServerValue.TIMESTAMP});
+    hostMode=true;
+    history.replaceState(null,'',location.pathname+'?room='+encodeURIComponent(roomId));
     showRoom(roomId);
   }catch(err){
     console.error('Room creation failed',err);
     const reason=err && (err.code||err.message) ? (err.code||err.message) : 'unknown error';
-    setLiveStatus('Could not create room: '+reason);
-    toast('Room creation failed — check the Live room status.');
+    let friendly=reason;
+    if(reason.includes('PERMISSION_DENIED') || reason.includes('permission-denied')) friendly='Firebase Database permission denied. Make sure Anonymous Auth is enabled and the published database rules match this app.';
+    setLiveStatus('Could not create room: '+friendly);
+    toast('Room creation failed — see Live room status.');
   }
 }
 function broadcast(){
