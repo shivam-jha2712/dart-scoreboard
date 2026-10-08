@@ -84,3 +84,83 @@
 .dart-3d .dart-body{filter:drop-shadow(2px 4px 2px rgba(0,0,0,.6));}
 .dartboard-hint{z-index:10;bottom:10px;}
 @media(max-width:800px){.real-board-image{transform:scale(1.02)} }
+
+/* V11 — physical board depth + truly planted 3D CSS darts */
+.dartboard-visual{perspective:1100px;isolation:isolate}
+.real-board-wrap{transform:rotateX(1.2deg) rotateY(-1.4deg);transform-style:preserve-3d;box-shadow:0 30px 35px rgba(0,0,0,.42),0 0 0 1px rgba(255,255,255,.16),inset 0 0 35px rgba(0,0,0,.35)}
+.real-board-image{filter:saturate(1.02) contrast(1.08) brightness(.98);transform:scale(1.02);}
+.real-board-wrap:after{border:2px solid rgba(255,255,255,.28);box-shadow:inset 0 0 30px rgba(0,0,0,.7),inset 0 3px 7px rgba(255,255,255,.24),0 5px 18px rgba(0,0,0,.42)}
+.board-glass-highlight{background:linear-gradient(122deg,rgba(255,255,255,.20),rgba(255,255,255,.04) 19%,transparent 38%,transparent 72%,rgba(0,0,0,.25));opacity:.9}
+.planted-darts-layer{position:absolute;inset:0;z-index:9;pointer-events:none;overflow:visible;transform-style:preserve-3d}
+.planted-dart{position:absolute;left:var(--x);top:var(--y);width:142px;height:34px;transform:translate(-100%, -50%) rotate(var(--dart-angle));transform-origin:100% 50%;transform-style:preserve-3d;animation:dartPlant .38s cubic-bezier(.18,.86,.25,1) both;filter:drop-shadow(7px 9px 5px rgba(0,0,0,.72));}
+.planted-dart:before{content:"";position:absolute;right:7px;top:15px;width:8px;height:5px;border-radius:50%;background:rgba(0,0,0,.55);filter:blur(2px);transform:translateZ(-5px)}
+.dart-shadow{position:absolute;right:10px;top:14px;width:92px;height:8px;border-radius:50%;background:rgba(0,0,0,.45);filter:blur(5px);transform:translateY(7px) rotate(-7deg)}
+.dart-flight{position:absolute;left:0;top:2px;width:38px;height:30px;transform:skewY(-7deg) rotate(-2deg);filter:drop-shadow(2px 3px 2px rgba(0,0,0,.5));}
+.dart-flight:before,.dart-flight:after{content:"";position:absolute;inset:2px 0 7px 0;background:linear-gradient(135deg,var(--flight) 0 48%,var(--flight-dark) 49% 100%);clip-path:polygon(0 50%,22% 4%,100% 18%,72% 50%,100% 82%,22% 96%);border-radius:2px}
+.dart-flight:after{inset:5px 5px 10px 4px;background:linear-gradient(160deg,rgba(255,255,255,.55),transparent 35%,rgba(0,0,0,.28));clip-path:polygon(0 50%,100% 0,78% 50%,100% 100%)}
+.dart-flight i{position:absolute;left:15px;top:2px;width:1px;height:25px;background:rgba(255,255,255,.6);transform:rotate(8deg);z-index:2}
+.dart-shaft{position:absolute;left:30px;top:13px;width:58px;height:5px;border-radius:3px;background:linear-gradient(180deg,#f8f4e9 0,#b5a98d 22%,#493d31 46%,#dddfe2 55%,#5b6269 100%);box-shadow:0 1px 2px #000,inset 0 1px rgba(255,255,255,.8);}
+.dart-barrel{position:absolute;left:80px;top:8px;width:39px;height:15px;border-radius:6px;background:linear-gradient(100deg,#2c3035,#bfc4c9 20%,#555b62 44%,#e2e5e7 61%,#4a5057 82%,#202429);border:1px solid #15181c;box-shadow:inset 2px 0 3px rgba(255,255,255,.35),inset -3px 0 5px rgba(0,0,0,.65),0 2px 2px #000}
+.dart-barrel:after{content:"";position:absolute;inset:2px 4px;background:repeating-linear-gradient(90deg,transparent 0 5px,rgba(0,0,0,.6) 5px 6px,rgba(255,255,255,.28) 6px 7px);opacity:.75;border-radius:4px}
+.dart-barrel i{position:absolute;top:1px;width:2px;height:13px;background:rgba(255,255,255,.2);z-index:2}
+.dart-barrel i:nth-child(1){left:7px}.dart-barrel i:nth-child(2){left:14px}.dart-barrel i:nth-child(3){left:21px}.dart-barrel i:nth-child(4){left:28px}.dart-barrel i:nth-child(5){left:34px}
+.dart-point{position:absolute;right:-3px;top:12px;width:22px;height:6px;clip-path:polygon(0 0,100% 50%,0 100%);background:linear-gradient(180deg,#f7fafc,#737b83 48%,#20252b);filter:drop-shadow(2px 2px 1px #000)}
+.dart-score-badge{position:absolute;left:51px;top:-19px;min-width:28px;height:18px;padding:0 5px;border-radius:9px;background:rgba(5,8,12,.94);border:1px solid rgba(255,255,255,.24);box-shadow:0 4px 12px rgba(0,0,0,.7);color:#fff;font:800 10px/18px 'Space Grotesk',sans-serif;text-align:center;transform:rotate(calc(-1 * var(--dart-angle)));white-space:nowrap}
+.dart-fly-1 .dart-score-badge{color:#ff9ea5}.dart-fly-2 .dart-score-badge{color:#ffe18b}.dart-fly-3 .dart-score-badge{color:#baffaa}
+@keyframes dartPlant{0%{opacity:0;transform:translate(-100%,-50%) rotate(var(--dart-angle)) translateX(34px) scale(.82)}55%{opacity:1;transform:translate(-100%,-50%) rotate(var(--dart-angle)) translateX(-4px) scale(1.04)}100%{opacity:1;transform:translate(-100%,-50%) rotate(var(--dart-angle)) translateX(0) scale(1)}}
+
+/* The typed number is only a draft. It must never create a planted dart until committed. */
+.throw-inputs input.pending-throw{border-color:#72809a;box-shadow:none;color:#dbe2eb}
+
+/* V12 — committed-dart interaction and photoreal board presentation */
+.dartboard-visual{max-width:590px!important;background:transparent!important;border-radius:50%;box-shadow:0 34px 90px rgba(0,0,0,.82),0 0 0 7px #080b10,0 0 0 10px #59626d,0 0 0 13px #161b21;}
+.real-board-wrap{overflow:hidden!important;transform:perspective(1400px) rotateX(1deg) rotateY(-1deg);transform-style:preserve-3d;box-shadow:0 28px 55px rgba(0,0,0,.62),inset 0 0 40px rgba(0,0,0,.52)!important;}
+.real-board-image{width:106%!important;height:106%!important;inset:-3%!important;object-fit:cover!important;filter:saturate(1.04) contrast(1.12) brightness(.94)!important;transform:scale(1.015)!important;}
+.real-board-wrap:before{background:radial-gradient(circle at 31% 20%,rgba(255,255,255,.19),transparent 24%),linear-gradient(115deg,rgba(255,255,255,.09),transparent 35%,rgba(0,0,0,.26) 100%)!important;mix-blend-mode:screen!important;}
+.real-board-wrap:after{border:2px solid rgba(255,255,255,.32)!important;box-shadow:inset 0 0 32px rgba(0,0,0,.72),inset 0 4px 10px rgba(255,255,255,.22),0 8px 24px rgba(0,0,0,.55)!important;}
+.dartboard-hit-layer{z-index:6!important;}
+.planted-darts-layer{z-index:9!important;}
+.planted-dart{width:154px!important;height:38px!important;filter:drop-shadow(8px 11px 7px rgba(0,0,0,.78))!important;}
+.planted-dart:after{content:"";position:absolute;right:8px;top:8px;width:18px;height:20px;border-radius:50%;background:rgba(255,255,255,.07);filter:blur(4px);transform:rotate(18deg);}
+.dart-flight{width:42px!important;height:34px!important;}
+.dart-shaft{left:33px!important;width:62px!important;height:6px!important;box-shadow:0 2px 3px #000,inset 0 1px rgba(255,255,255,.9)!important;}
+.dart-barrel{left:86px!important;width:43px!important;height:17px!important;border-radius:7px!important;}
+.dart-point{right:-6px!important;width:25px!important;height:7px!important;}
+.dart-score-badge{left:55px!important;top:-24px!important;font-size:10px!important;box-shadow:0 5px 14px rgba(0,0,0,.82)!important;}
+.dart-entry{position:relative;display:grid;grid-template-columns:1fr 40px;gap:7px;align-items:end;}
+.dart-entry label{grid-column:1/-1;font-size:9px;letter-spacing:.12em;color:#778196;font-weight:800;margin-bottom:-3px;}
+.dart-entry input{width:100%;}
+.dart-entry .commit-dart{height:48px;border:1px solid #2c3544;background:#151b24;color:#9fabbc;border-radius:10px;font-size:20px;font-weight:900;cursor:pointer;transition:.16s;}
+.dart-entry .commit-dart:hover{border-color:#b9f34a;color:#b9f34a;background:#172016;}
+.dart-entry.active input{border-color:#b9f34a!important;box-shadow:0 0 0 3px rgba(185,243,74,.1)!important;}
+.dart-entry input.pending-throw{border-color:#66748a!important;color:#fff!important;}
+.dart-entry input.committed-throw{border-color:#b9f34a!important;color:#fff!important;background:#121a11!important;}
+.dart-keypad{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin:12px 0;}
+.dart-keypad button{min-height:42px;border:1px solid #283241;background:#151c26;color:#e9edf3;border-radius:9px;font:700 15px 'Space Grotesk';cursor:pointer;transition:.14s;}
+.dart-keypad button:hover{border-color:#7f8a9c;transform:translateY(-1px);}
+.dart-keypad button[data-key="0"]{color:#b9f34a;}
+.dart-keypad button[data-key="back"],.dart-keypad button[data-key="clear"]{color:#ff9da4;}
+@media(max-width:800px){.dartboard-visual{max-width:470px!important}.dart-keypad{grid-template-columns:repeat(3,1fr)}}
+
+/* V13: keep the throw controls permanently visible and make the scoring flow explicit. */
+.visual-throw-layout{align-items:start!important;min-height:420px}
+#throwPanel{display:block!important;visibility:visible!important;min-height:360px!important;opacity:1!important;position:relative!important;z-index:8!important}
+#throwPanel .throw-title,#throwPanel .round-dart-summary,#throwPanel .throw-inputs,#throwPanel .dart-keypad,#throwPanel .throw-actions{position:relative;z-index:2}
+.dart-entry{min-width:0}
+.dart-entry input{height:48px}
+.dart-entry .commit-dart{height:48px}
+.dart-keypad button{user-select:none;-webkit-tap-highlight-color:transparent}
+.planted-darts-layer{pointer-events:none!important;z-index:9!important}
+.planted-dart{pointer-events:none!important}
+@media(max-width:800px){#throwPanel{min-height:0!important}.visual-throw-layout{min-height:0!important}}
+
+/* V14: guaranteed visible throw controls */
+#throwPanel{display:block!important;visibility:visible!important;opacity:1!important;position:relative!important;z-index:30!important;min-width:0;isolation:isolate;}
+#throwPanel *{visibility:visible;}
+.visual-throw-layout{position:relative;z-index:1;}
+.visual-throw-layout > #throwPanel{min-height:360px;}
+#throwPanel .throw-title h3,#throwPanel .throw-title span,#throwPanel label,#throwPanel input,#throwPanel button,#throwPanel .round-dart-chip,#throwPanel .round-total-box{visibility:visible;opacity:1;}
+.dart-entry{z-index:2;}
+.dart-keypad{position:relative;z-index:2;}
+.throw-actions{position:relative;z-index:2;}
+@media(max-width:800px){.visual-throw-layout > #throwPanel{min-height:0;}}

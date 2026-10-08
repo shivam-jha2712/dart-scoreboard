@@ -6,7 +6,9 @@ let baseball={active:false,inning:1,current:0,players:[],history:[]};
 let roomId=new URLSearchParams(location.search).get('room');
 let hostMode=!roomId;
 let firebaseApp=null, db=null, auth=null, currentUid=null, roomRef=null, authReadyPromise=null;
-const throwSelection={0:null,1:null,2:null}; let activeThrow=0;
+const throwSelection={0:null,1:null,2:null};
+let draftThrows=[null,null,null];
+let activeThrow=0;
 function savePlayers(){localStorage.setItem('throwPlayers',JSON.stringify(players));}
 function initials(name){return name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()}
 function avatar(p,small=false){return p.photo?`<img class="${small?'mini-avatar':'avatar'}" src="${p.photo}" alt="${esc(p.name)}">`:`<span class="${small?'mini-avatar':'avatar'}" style="background:${p.color||colors[0]}">${initials(p.name)}</span>`}
@@ -36,120 +38,156 @@ function dartScoreTarget(score){
 }
 function makeDartElement(score,index){
   const t=dartScoreTarget(score);
-  const angle=t.angle+(index-1)*1.8;
+  const angle=t.angle+(index-1)*1.2;
   const a=(angle-90)*Math.PI/180;
-  const r=t.r;
-  const x=300+Math.cos(a)*r;
-  const y=300+Math.sin(a)*r;
-  const flight=['#ff3f4b','#ffc43b','#74ef63'][index%3];
-  const flightDark=['#9f101d','#a76d00','#2b8e2f'][index%3];
-  const id=`dartShadow${index}`;
-  return `<g class="dart-3d dart-fly-${index+1}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(angle-90).toFixed(1)})" style="--dart-delay:${index*70}ms" data-score="${score}">
-      <defs>
-        <linearGradient id="shaftG${index}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff5d6"/><stop offset=".38" stop-color="#c59a5d"/><stop offset=".62" stop-color="#4a3623"/><stop offset=".76" stop-color="#e6e8eb"/><stop offset="1" stop-color="#555b63"/></linearGradient>
-        <linearGradient id="barrelG${index}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4b5057"/><stop offset=".2" stop-color="#d8dde1"/><stop offset=".48" stop-color="#6b727a"/><stop offset=".72" stop-color="#f3f5f7"/><stop offset="1" stop-color="#42474e"/></linearGradient>
-        <linearGradient id="tipG${index}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e9edf1"/><stop offset=".5" stop-color="#7f8790"/><stop offset="1" stop-color="#343a40"/></linearGradient>
-        <filter id="${id}" x="-40%" y="-80%" width="180%" height="260%"><feDropShadow dx="3" dy="6" stdDeviation="4" flood-color="#000" flood-opacity=".8"/></filter>
-      </defs>
-      <g filter="url(#${id})">
-        <ellipse cx="-51" cy="8" rx="52" ry="5" fill="#000" opacity=".28"/>
-        <path d="M-112,-12 L-91,-6 L-86,0 L-91,6 L-112,12 L-106,2 Z" fill="${flightDark}" opacity=".95"/>
-        <path d="M-110,-9 L-92,-4 L-88,0 L-92,4 L-110,9 L-104,1 Z" fill="${flight}" stroke="#fff" stroke-opacity=".18" stroke-width="1"/>
-        <path d="M-102,-6 L-92,-3 L-90,0 L-92,3 L-102,6" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.5"/>
-        <rect x="-89" y="-2.5" width="49" height="5" rx="2.5" fill="url(#shaftG${index})"/>
-        <rect x="-41" y="-6" width="30" height="12" rx="4" fill="url(#barrelG${index})" stroke="#20242a" stroke-width="1"/>
-        <path d="M-36,-5 L-33,5 M-30,-5 L-27,5 M-24,-5 L-21,5 M-18,-5 L-15,5" stroke="#2f343a" stroke-width="2" opacity=".8"/>
-        <path d="M-11,-3 L4,0 L-11,3 Z" fill="url(#tipG${index})" stroke="#16191d" stroke-width=".8"/>
-        <circle cx="-12" cy="0" r="3.5" fill="#b8bec5" stroke="#3b4047" stroke-width="1"/>
-      </g>
-      <g transform="translate(-61 -25) rotate(${-(angle-90)})">
-        <rect x="0" y="0" width="36" height="17" rx="8.5" fill="#080b10" fill-opacity=".9" stroke="#ffffff" stroke-opacity=".16"/>
-        <text x="18" y="12" text-anchor="middle" class="dart-score-label">${score}</text>
-      </g>
-    </g>`;
+  const x=300+Math.cos(a)*t.r;
+  const y=300+Math.sin(a)*t.r;
+  const colors=[['#f94144','#9d0e16'],['#ffcc33','#a66b00'],['#71e35a','#2e8d24']][index%3];
+  return `<div class="planted-dart dart-fly-${index+1}" style="--x:${(x/6).toFixed(3)}%;--y:${(y/6).toFixed(3)}%;--dart-angle:${(angle+90).toFixed(2)}deg;--flight:${colors[0]};--flight-dark:${colors[1]};" data-score="${score}">
+    <div class="dart-shadow"></div>
+    <div class="dart-flight"><i></i><i></i></div>
+    <div class="dart-shaft"></div>
+    <div class="dart-barrel"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="dart-point"></div>
+    <span class="dart-score-badge">${score}</span>
+  </div>`;
 }
 function renderBoardDarts(){
   const board=$('#dartboardVisual'); if(!board)return;
-  const old=board.querySelector('.thrown-darts-layer'); if(old)old.remove();
-  const vals=[0,1,2].map(i=>throwSelection[i]).filter(v=>Number.isInteger(v));
-  const layer=document.createElement('div'); layer.className='thrown-darts-layer';
-  const svg=board.querySelector('.dartboard-svg');
-  if(svg){
-    const group=document.createElementNS('http://www.w3.org/2000/svg','g');
-    group.setAttribute('class','thrown-darts-svg-layer');
-    group.innerHTML=vals.map((v,i)=>makeDartElement(v,i)).join('');
-    svg.appendChild(group);
-  }
-  layer.remove();
+  let layer=board.querySelector('.planted-darts-layer');
+  if(layer)layer.remove();
+  layer=document.createElement('div');layer.className='planted-darts-layer';
+  layer.innerHTML=throwSelection.map((v,i)=>Number.isInteger(v)?makeDartElement(v,i):'').join('');
+  board.querySelector('.real-board-wrap')?.appendChild(layer);
 }
+
 function makeDartboard(){
   const el=$('#dartboardVisual'); if(!el)return;
   const nums=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
   const cx=300,cy=300;
-  let svg=`<svg class="dartboard-svg" viewBox="0 0 600 600" aria-label="Interactive 3D-style darts board">
-    <defs>
-      <radialGradient id="boardBase" cx="38%" cy="30%" r="78%"><stop offset="0" stop-color="#3d434b"/><stop offset=".38" stop-color="#20252c"/><stop offset=".78" stop-color="#0d1116"/><stop offset="1" stop-color="#05070a"/></radialGradient>
-      <radialGradient id="sisalCream" cx="32%" cy="25%" r="85%"><stop offset="0" stop-color="#fffaf0"/><stop offset=".45" stop-color="#e6dfd2"/><stop offset="1" stop-color="#a9a49b"/></radialGradient>
-      <radialGradient id="sisalBlack" cx="32%" cy="25%" r="85%"><stop offset="0" stop-color="#30363e"/><stop offset=".5" stop-color="#12171d"/><stop offset="1" stop-color="#05070a"/></radialGradient>
-      <linearGradient id="rimG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f1f4f6"/><stop offset=".14" stop-color="#707985"/><stop offset=".34" stop-color="#161a20"/><stop offset=".56" stop-color="#bfc5cc"/><stop offset=".72" stop-color="#353b43"/><stop offset="1" stop-color="#0c0f13"/></linearGradient>
-      <linearGradient id="redG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6a67"/><stop offset=".35" stop-color="#ef2f3b"/><stop offset=".72" stop-color="#a81523"/><stop offset="1" stop-color="#5d0b14"/></linearGradient>
-      <linearGradient id="greenG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d7ff79"/><stop offset=".35" stop-color="#9bea35"/><stop offset=".72" stop-color="#4e9d1e"/><stop offset="1" stop-color="#234d12"/></linearGradient>
-      <filter id="boardShadow" x="-35%" y="-35%" width="170%" height="180%"><feDropShadow dx="0" dy="22" stdDeviation="15" flood-color="#000" flood-opacity=".8"/></filter>
-      <filter id="sisalNoise" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3" seed="12" result="n"/><feColorMatrix in="n" values=".55 0 0 0 0 0 .55 0 0 0 0 0 .55 0 0 0 0 0 .17 0"/><feBlend in="SourceGraphic" mode="multiply"/></filter>
-      <filter id="metalGlow"><feGaussianBlur stdDeviation="1.4"/></filter>
-    </defs>
-    <circle cx="300" cy="300" r="294" fill="#020304" filter="url(#boardShadow)"/>
-    <circle cx="300" cy="300" r="291" fill="url(#rimG)" stroke="#050608" stroke-width="4"/>
-    <circle cx="300" cy="300" r="279" fill="#080b0f" stroke="#8a929c" stroke-width="2"/>
-    <circle cx="300" cy="300" r="272" fill="url(#boardBase)"/>
-    <circle cx="300" cy="300" r="268" fill="none" stroke="#d7dbe0" stroke-opacity=".2" stroke-width="2"/>`;
-  const rings=[43,54,126,150,216,239,268];
+  // The visual board is a photorealistic rendered board; the SVG below is an invisible
+  // interaction layer so scoring remains precise without flattening the artwork.
+  let svg=`<svg class="dartboard-svg dartboard-hit-layer" viewBox="0 0 600 600" aria-label="Interactive realistic darts board">`;
   for(let i=0;i<20;i++){
-    const a0=i*18-9,a1=i*18+9,light=i%2===0;
-    const base=light?'url(#sisalCream)':'url(#sisalBlack)';
-    svg+=`<path class="board-wedge" data-seg="${nums[i]}" d="${sectorPath(cx,cy,54,268,a0,a1)}" fill="${base}" filter="url(#sisalNoise)"/>`;
-    svg+=`<path d="${sectorPath(cx,cy,54,126,a0,a1)}" fill="${base}" opacity=".98"/>`;
-    svg+=`<path d="${sectorPath(cx,cy,126,150,a0,a1)}" fill="url(#${i%2===0?'redG':'greenG'})"/>`;
-    svg+=`<path d="${sectorPath(cx,cy,150,216,a0,a1)}" fill="${base}" filter="url(#sisalNoise)"/>`;
-    svg+=`<path d="${sectorPath(cx,cy,216,239,a0,a1)}" fill="url(#${i%2===0?'greenG':'redG'})"/>`;
-    svg+=`<path d="${sectorPath(cx,cy,239,268,a0,a1)}" fill="${base}" opacity=".98"/>`;
+    const a0=i*18-9,a1=i*18+9;
+    // Separate invisible hit regions for single, triple and double.
+    svg+=`<path class="hit-zone" data-score-area="${nums[i]}" data-ring="single" d="${sectorPath(cx,cy,150,268,a0,a1)}"/>`;
+    svg+=`<path class="hit-zone" data-score-area="${nums[i]*3}" data-ring="triple" d="${sectorPath(cx,cy,126,150,a0,a1)}"/>`;
+    svg+=`<path class="hit-zone" data-score-area="${nums[i]*2}" data-ring="double" d="${sectorPath(cx,cy,216,239,a0,a1)}"/>`;
   }
-  // Strong, readable wire rings: the inner colored band is TRIPLE, the outer colored band is DOUBLE.
-  svg+=`<circle cx="300" cy="300" r="126" fill="none" stroke="#d7dbe0" stroke-width="2" opacity=".9"/>
-    <circle cx="300" cy="300" r="150" fill="none" stroke="#c9cfd6" stroke-width="4" opacity=".95"/>
-    <circle cx="300" cy="300" r="216" fill="none" stroke="#d7dbe0" stroke-width="2" opacity=".95"/>
-    <circle cx="300" cy="300" r="239" fill="none" stroke="#c9cfd6" stroke-width="4" opacity=".95"/>`;
-  for(let i=0;i<20;i++){
-    const a=i*18-9,p1=polarPoint(cx,cy,43,a),p2=polarPoint(cx,cy,268,a);
-    svg+=`<line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}" stroke="#d8dde2" stroke-width="2.8" opacity=".9"/>
-      <circle cx="${p2[0]}" cy="${p2[1]}" r="1.8" fill="#fff" opacity=".7"/>`;
-  }
-  // Crisp outer scoring edge and center rings.
-  svg+=`<circle cx="300" cy="300" r="268" fill="none" stroke="#f0f2f4" stroke-width="2" opacity=".45"/>
-    <circle cx="300" cy="300" r="54" fill="#11161c" stroke="#bfc5cc" stroke-width="4"/>
-    <circle cx="300" cy="300" r="43" fill="url(#greenG)" stroke="#1b2612" stroke-width="3"/>
-    <circle cx="300" cy="300" r="23" fill="#d92735" stroke="#650e17" stroke-width="4"/>
-    <circle cx="300" cy="300" r="12" fill="#ff4b51" opacity=".85"/>
-    <text x="300" y="304" class="bull-label" text-anchor="middle">BULL</text>`;
-  for(let i=0;i<20;i++){
-    const lp=polarPoint(cx,cy,281,i*18);
-    svg+=`<text x="${lp[0]}" y="${lp[1]+7}" class="board-number" text-anchor="middle">${nums[i]}</text>`;
-  }
-  // Tiny ring labels reinforce the visual distinction without cluttering the board.
-  svg+=`<g class="ring-labels" aria-hidden="true">
-      <text x="300" y="158" text-anchor="middle" class="ring-label triple-label">TRIPLE</text>
-      <text x="300" y="518" text-anchor="middle" class="ring-label double-label">DOUBLE</text>
-    </g>
-    <path d="M300 25 A275 275 0 0 1 550 160" fill="none" stroke="#fff" stroke-opacity=".14" stroke-width="9" stroke-linecap="round"/>
-    <path d="M75 445 A275 275 0 0 0 185 535" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="12" stroke-linecap="round"/>`;
-  svg+=`</svg>`;
-  el.innerHTML=`${svg}<div class="dartboard-hint">Tap a scoring area · darts appear where you scored</div>`;
-  $$('#dartboardVisual .board-wedge').forEach(b=>b.addEventListener('click',()=>setThrow(activeThrow,Number(b.dataset.seg))));
+  svg+=`<circle class="hit-zone" data-score-area="25" data-ring="outer-bull" cx="300" cy="300" r="43"/>
+         <circle class="hit-zone" data-score-area="50" data-ring="bull" cx="300" cy="300" r="23"/>
+         </svg>`;
+  el.innerHTML=`<div class="real-board-wrap"><img class="real-board-image" src="dartboard-realistic.png" alt="Realistic darts board"><div class="board-glass-highlight"></div>${svg}</div><div class="dartboard-hint">Tap a scoring area · darts appear after the score is selected</div>`;
+  $$('#dartboardVisual .hit-zone').forEach(z=>z.addEventListener('click',()=>{
+    const score=Number(z.dataset.scoreArea);
+    setThrow(activeThrow,score,true);
+  }));
   renderBoardDarts();
 }
-function setThrow(i,value){const input=$('#t'+(i+1));if(!input)return;input.value=value;throwSelection[i]=value;activeThrow=(i+1)%3;$$('.throw-inputs input').forEach((x,j)=>x.classList.toggle('selected-throw',j===activeThrow));renderBoardDarts();updateRoundTotal();}
-function updateRoundTotal(){const total=throwSelection[0]+throwSelection[1]+throwSelection[2];const el=$('#roundTotal');if(el)el.textContent=total||0;const chips=$$('#roundDartSummary .round-dart-chip');chips.forEach((c,i)=>{const v=throwSelection[i];c.querySelector('.chip-score').textContent=v??'—';c.classList.toggle('filled',Number.isInteger(v));});}
-function renderDarts(){if(!darts.active)return;$('#dartsTargetLabel').textContent=darts.target;$('#dartsRoundLabel').textContent=darts.round;const sorted=[...darts.players].sort((a,b)=>a.score-b.score);$('#dartsBoard').innerHTML=sorted.map(p=>`<div class="score-card ${p.id===darts.players[darts.current].id?'current':''} ${p.score===0?'winner':''}"><div class="player-row">${avatar(p,true)}<strong>${esc(p.name)}</strong></div><div class="score-big">${p.score}</div><div class="score-sub">${p.scored} total points scored</div></div>`).join('');const p=darts.players[darts.current];throwSelection[0]=throwSelection[1]=throwSelection[2]=null;activeThrow=0;$('#throwPanel').innerHTML=`<div class="throw-title"><div><h3>${avatar(p,true)} ${esc(p.name)}'s throw</h3><span class="turn-subtitle">Tap the board or enter each dart score</span></div><span class="muted">Remaining ${p.score}</span></div><div id="roundDartSummary" class="round-dart-summary"><div class="round-dart-chip"><span>DART 1</span><b class="chip-score">—</b></div><div class="round-dart-chip"><span>DART 2</span><b class="chip-score">—</b></div><div class="round-dart-chip"><span>DART 3</span><b class="chip-score">—</b></div><div class="round-total-box"><span>ROUND TOTAL</span><b id="roundTotal">0</b></div></div><div class="throw-inputs"><input id="t1" type="number" min="0" max="60" step="1" placeholder="1st"><input id="t2" type="number" min="0" max="60" step="1" placeholder="2nd"><input id="t3" type="number" min="0" max="60" step="1" placeholder="3rd"></div><div class="throw-actions"><button class="primary-btn" id="submitDarts">Add round →</button></div>`;$$('.throw-inputs input').forEach((x,i)=>{x.onfocus=()=>activeThrow=i;x.oninput=()=>{const v=x.value.trim();throwSelection[i]=v===''?null:Number(v);renderBoardDarts();updateRoundTotal()};});$('#submitDarts').onclick=submitDarts;makeDartboard();updateRoundTotal();renderDartsHistory();}
+function setThrow(i,value,fromBoard=false){
+  const input=$('#t'+(i+1));if(!input)return;
+  const v=Number(value);
+  input.value=String(value);
+  draftThrows[i]=v;
+  if(fromBoard){
+    throwSelection[i]=v;
+    draftThrows[i]=v;
+    activeThrow=Math.min(i+1,2);
+    $$('.throw-inputs input').forEach((x,j)=>x.classList.toggle('selected-throw',j===activeThrow));
+    updateRoundTotal();
+    renderBoardDarts();
+  } else {
+    updateRoundTotal();
+  }
+}
+function commitTypedThrow(i){
+  const input=$('#t'+(i+1)); if(!input)return false;
+  const raw=input.value.trim();
+  if(raw===''){toast(`Dart ${i+1}: enter a score first.`);return false;}
+  if(!/^\d+$/.test(raw)){toast(`Dart ${i+1}: enter a whole number.`);return false;}
+  const v=Number(raw);
+  if(!isValidDartScore(v)){toast(`Invalid dart ${i+1}. That score cannot be made with one dart.`);return false;}
+  draftThrows[i]=v;throwSelection[i]=v;input.classList.remove('pending-throw');input.classList.add('committed-throw');updateRoundTotal();renderBoardDarts();
+  if(i<2)activeThrow=i+1;
+  return true;
+}
+
+function updateRoundTotal(){const total=draftThrows[0]+draftThrows[1]+draftThrows[2];const el=$('#roundTotal');if(el)el.textContent=total||0;const chips=$$('#roundDartSummary .round-dart-chip');chips.forEach((c,i)=>{const v=draftThrows[i];c.querySelector('.chip-score').textContent=v??'—';c.classList.toggle('filled',Number.isInteger(v));});}
+function renderDarts(){
+  if(!darts.active)return;
+  const targetEl=$('#dartsTargetLabel'), roundEl=$('#dartsRoundLabel');
+  if(targetEl)targetEl.textContent=darts.target;
+  if(roundEl)roundEl.textContent=darts.round;
+  const currentPlayer=darts.players[darts.current];
+  if(!currentPlayer)return;
+
+  const boardScores=$('#dartsBoard');
+  if(boardScores){
+    const sorted=[...darts.players].sort((a,b)=>a.score-b.score);
+    boardScores.innerHTML=sorted.map(p=>`<div class="score-card ${p.id===currentPlayer.id?'current':''} ${p.score===0?'winner':''}"><div class="player-row">${avatar(p,true)}<strong>${esc(p.name)}</strong></div><div class="score-big">${p.score}</div><div class="score-sub">${p.scored} total points scored</div></div>`).join('');
+  }
+
+  throwSelection[0]=throwSelection[1]=throwSelection[2]=null;
+  draftThrows[0]=draftThrows[1]=draftThrows[2]=null;
+  activeThrow=0;
+
+  const panel=$('#throwPanel');
+  if(!panel)return;
+  panel.style.display='block';
+  panel.style.visibility='visible';
+  panel.style.minHeight='360px';
+  panel.innerHTML=`
+    <div class="throw-title">
+      <div><h3>${avatar(currentPlayer,true)} ${esc(currentPlayer.name)}'s throw</h3><span class="turn-subtitle">Enter each dart score. A dart is planted only after that score is committed.</span></div>
+      <span class="muted">Remaining ${currentPlayer.score}</span>
+    </div>
+    <div id="roundDartSummary" class="round-dart-summary">
+      <div class="round-dart-chip"><span>DART 1</span><b class="chip-score">—</b></div>
+      <div class="round-dart-chip"><span>DART 2</span><b class="chip-score">—</b></div>
+      <div class="round-dart-chip"><span>DART 3</span><b class="chip-score">—</b></div>
+      <div class="round-total-box"><span>ROUND TOTAL</span><b id="roundTotal">0</b></div>
+    </div>
+    <div class="throw-inputs">
+      ${[1,2,3].map(n=>`<div class="dart-entry" data-entry="${n-1}"><label>DART ${n}</label><input id="t${n}" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="Score"><button type="button" class="commit-dart" data-commit="${n-1}" title="Commit Dart ${n}">✓</button></div>`).join('')}
+    </div>
+    <div class="dart-keypad">
+      ${[1,2,3,4,5,6,7,8,9,0].map(n=>`<button type="button" data-key="${n}">${n}</button>`).join('')}
+      <button type="button" data-key="back">⌫</button><button type="button" data-key="clear">Clear</button>
+    </div>
+    <div class="throw-actions"><button type="button" class="primary-btn" id="submitDarts">Add round →</button></div>
+  `;
+
+  $$('.throw-inputs input').forEach((input,i)=>{
+    input.addEventListener('focus',()=>{activeThrow=i; $$('.dart-entry').forEach((e,j)=>e.classList.toggle('active',j===i));});
+    input.addEventListener('input',()=>{
+      const raw=input.value.replace(/\D/g,'').slice(0,2);
+      if(input.value!==raw)input.value=raw;
+      draftThrows[i]=raw===''?null:Number(raw);
+      input.classList.add('pending-throw');
+      updateRoundTotal();
+    });
+    input.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){e.preventDefault();commitTypedThrow(i);}
+    });
+  });
+  $$('.commit-dart').forEach(btn=>btn.addEventListener('click',()=>{
+    const i=Number(btn.dataset.commit); activeThrow=i; commitTypedThrow(i);
+  }));
+  $$('[data-key]').forEach(btn=>btn.addEventListener('click',()=>{
+    const k=btn.dataset.key, input=$('#t'+(activeThrow+1)); if(!input)return;
+    if(k==='back')input.value=input.value.slice(0,-1);
+    else if(k==='clear')input.value='';
+    else if(input.value.length<2)input.value+=k;
+    const raw=input.value.replace(/\D/g,'').slice(0,2);
+    input.value=raw; draftThrows[activeThrow]=raw===''?null:Number(raw); input.classList.add('pending-throw'); updateRoundTotal(); input.focus();
+  }));
+  $('#submitDarts').onclick=submitDarts;
+  makeDartboard();
+  updateRoundTotal();
+  renderDartsHistory();
+}
+
 function isValidDartScore(value){
   if(!Number.isInteger(value) || value<0 || value>60)return false;
   if(value===0 || value===25 || value===50)return true;
@@ -159,6 +197,7 @@ function isValidDartScore(value){
   return false;
 }
 function submitDarts(){
+  for(let i=0;i<3;i++){const raw=$('#t'+(i+1)).value.trim();if(raw!=='' && !Number.isInteger(throwSelection[i])){if(!commitTypedThrow(i))return;}}
   const raw=[1,2,3].map(i=>$('#t'+i).value.trim());
   const vals=raw.map(v=>v===''?0:Number(v));
   const invalid=vals.findIndex(v=>!isValidDartScore(v));
