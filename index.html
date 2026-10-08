@@ -1,122 +1,450 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#10131f" />
-  <title>Throw — Darts & Baseball</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <link rel="shortcut icon" href="favicon.svg" />
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <div id="app">
-    <header class="topbar">
-      <button class="brand" data-view="home" aria-label="Go home"><img class="brand-mark" src="favicon.svg" alt="" aria-hidden="true"><span>THROW</span></button>
-      <nav class="nav" aria-label="Main navigation">
-        <button class="nav-link active" data-view="home">Home</button>
-        <button class="nav-link" data-view="darts">Darts</button>
-        <button class="nav-link" data-view="baseball">Baseball</button><button class="nav-link" data-view="target">Target</button>
-        <button class="nav-link" data-view="players">Players</button>
-        <button class="nav-link" data-view="leaderboard">Leaderboard</button>
-        <button class="nav-link" data-view="rules">Rules</button>
-      </nav>
-      <button id="resetApp" class="icon-btn" title="Reset current game">↻</button>
-    </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#10131f" />
+    <title>Throw — Darts & Baseball</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="shortcut icon" href="favicon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <button class="brand" data-view="home" aria-label="Go home">
+          <img
+            class="brand-mark"
+            src="favicon.svg"
+            alt=""
+            aria-hidden="true"
+          /><span>THROW</span>
+        </button>
+        <nav class="nav" aria-label="Main navigation">
+          <button class="nav-link active" data-view="home">Home</button>
+          <button class="nav-link" data-view="darts">Darts</button>
+          <!-- <button class="nav-link" data-view="baseball">Baseball</button> -->
+          <button class="nav-link" data-view="target">Target</button>
+          <button class="nav-link" data-view="players">Players</button>
+          <button class="nav-link" data-view="leaderboard">Leaderboard</button>
+          <button class="nav-link" data-view="rules">Rules</button>
+        </nav>
+        <button id="resetApp" class="icon-btn" title="Reset current game">
+          ↻
+        </button>
+      </header>
 
-    <main>
-      <section id="home" class="view active-view">
-        <div class="hero">
-          <div class="hero-copy">
-            <div class="eyebrow">FRIENDS • THROWS • BRAGGING RIGHTS</div>
-            <h1>Keep score.<br><em>Talk trash.</em></h1>
-            <p>A simple, stylish scoreboard for nights when the only thing more competitive than the game is your group chat.</p>
-            <div class="hero-actions">
-              <button class="primary-btn" data-view="darts">🎯 Start Darts</button>
-              <button class="secondary-btn" data-view="baseball">⚾ Baseball Mode</button>
+      <main>
+        <section id="home" class="view active-view">
+          <div class="hero">
+            <div class="hero-copy">
+              <div class="eyebrow">FRIENDS • THROWS • BRAGGING RIGHTS</div>
+              <h1>Keep score.<br /><em>Talk trash.</em></h1>
+              <p>
+                A simple, stylish scoreboard for nights when the only thing more
+                competitive than the game is your group chat.
+              </p>
+              <div class="hero-actions">
+                <button class="primary-btn" data-view="darts">
+                  🎯 Start Darts
+                </button>
+                <button class="secondary-btn" data-view="target">
+                  🎯 Target Mode
+                </button>
+              </div>
+            </div>
+            <div class="hero-card">
+              <div class="dartboard-art">
+                <div class="ring r1"></div>
+                <div class="ring r2"></div>
+                <div class="ring r3"></div>
+                <div class="bull">×</div>
+              </div>
+              <div class="hero-card-caption">
+                <span>TONIGHT'S VIBE</span><strong>ONE MORE ROUND.</strong>
+              </div>
             </div>
           </div>
-          <div class="hero-card">
-            <div class="dartboard-art"><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="bull">×</div></div>
-            <div class="hero-card-caption"><span>TONIGHT'S VIBE</span><strong>ONE MORE ROUND.</strong></div>
+          <div class="feature-grid">
+            <div class="feature">
+              <span>01</span><strong>Pick the game</strong>
+              <p>Classic darts, baseball, or the standard numbered target.</p>
+            </div>
+            <div class="feature">
+              <span>02</span><strong>Add your crew</strong>
+              <p>Names, initials, colours and optional face photos.</p>
+            </div>
+            <div class="feature">
+              <span>03</span><strong>Throw & track</strong>
+              <p>Enter scores quickly after every throw or inning.</p>
+            </div>
           </div>
-        </div>
-        <div class="feature-grid">
-          <div class="feature"><span>01</span><strong>Pick the game</strong><p>Classic darts, baseball, or the standard numbered target.</p></div>
-          <div class="feature"><span>02</span><strong>Add your crew</strong><p>Names, initials, colours and optional face photos.</p></div>
-          <div class="feature"><span>03</span><strong>Throw & track</strong><p>Enter scores quickly after every throw or inning.</p></div>
-        </div>
-      </section>
+        </section>
 
-      <section id="darts" class="view">
-        <div class="section-head"><div><div class="eyebrow">GAME MODE 01</div><h2>Classic Darts</h2><p>Choose a target, add your players and count every throw.</p></div><div class="pill">🎯 3 throws / round</div></div>
-        <div id="dartsSetup" class="setup-panel">
-          <div class="setup-grid">
-            <div><label>Starting score</label><div class="score-options" id="scoreOptions"><button class="score-option active" data-score="301">301</button><button class="score-option" data-score="501">501</button><button class="score-option" data-score="701">701</button><button class="score-option" data-score="custom">Custom</button></div><input id="customScore" class="field hidden" type="number" min="1" max="9999" placeholder="e.g. 401"></div>
-            <div><label>Players</label><div id="dartsPlayerPicker" class="player-picker"></div><button class="add-player-inline" data-view="players">＋ Manage players</button></div>
+        <section id="darts" class="view">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">GAME MODE 01</div>
+              <h2>Classic Darts</h2>
+              <p>Choose a target, add your players and count every throw.</p>
+            </div>
+            <div class="pill">🎯 3 throws / round</div>
           </div>
-          <button id="startDarts" class="primary-btn wide">Start game →</button>
+          <div id="dartsSetup" class="setup-panel">
+            <div class="setup-grid">
+              <div>
+                <label>Starting score</label>
+                <div class="score-options" id="scoreOptions">
+                  <button class="score-option active" data-score="301">
+                    301</button
+                  ><button class="score-option" data-score="501">501</button
+                  ><button class="score-option" data-score="701">701</button
+                  ><button class="score-option" data-score="custom">
+                    Custom
+                  </button>
+                </div>
+                <input
+                  id="customScore"
+                  class="field hidden"
+                  type="number"
+                  min="1"
+                  max="9999"
+                  placeholder="e.g. 401"
+                />
+              </div>
+              <div>
+                <label>Players</label>
+                <div id="dartsPlayerPicker" class="player-picker"></div>
+                <button class="add-player-inline" data-view="players">
+                  ＋ Manage players
+                </button>
+              </div>
+            </div>
+            <button id="startDarts" class="primary-btn wide">
+              Start game →
+            </button>
+          </div>
+          <div id="dartsGame" class="game-panel hidden">
+            <div class="game-toolbar">
+              <div>
+                <span class="muted">TARGET</span
+                ><strong id="dartsTargetLabel">501</strong>
+              </div>
+              <div>
+                <span class="muted">ROUND</span
+                ><strong id="dartsRoundLabel">1</strong>
+              </div>
+              <div class="checkout-badge">
+                <span class="muted">CHECKOUT</span><strong>Straight Out</strong>
+              </div>
+              <button id="newDarts" class="ghost-btn">New game</button>
+            </div>
+            <div id="dartsBoard" class="scoreboard"></div>
+            <div class="visual-throw-layout">
+              <div id="dartboardVisual" class="dartboard-visual"></div>
+              <div id="throwPanel" class="throw-panel"></div>
+            </div>
+            <div class="share-strip">
+              <div>
+                <strong>Live room</strong
+                ><span>Share this game with everyone on their phones.</span>
+              </div>
+              <button id="shareRoom" class="secondary-btn">
+                ▣ Create QR room
+              </button>
+            </div>
+            <div class="history">
+              <div class="history-head">
+                <h3>Turn history</h3>
+                <button id="undoDarts" class="text-btn">Undo last round</button>
+              </div>
+              <div id="dartsHistory"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="baseball" class="view">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">GAME MODE 02</div>
+              <h2>Baseball Darts</h2>
+              <p>
+                9 innings. Each inning is a fresh chance to smash your friends.
+              </p>
+            </div>
+            <div class="pill">⚾ 9 innings</div>
+          </div>
+          <div id="baseballSetup" class="setup-panel">
+            <div>
+              <label>Players</label>
+              <div id="baseballPlayerPicker" class="player-picker"></div>
+              <button class="add-player-inline" data-view="players">
+                ＋ Manage players
+              </button>
+            </div>
+            <button id="startBaseball" class="primary-btn wide">
+              Start baseball →
+            </button>
+          </div>
+          <div id="baseballGame" class="game-panel hidden">
+            <div class="game-toolbar">
+              <div>
+                <span class="muted">INNING</span
+                ><strong id="inningLabel">1 / 9</strong>
+              </div>
+              <button id="newBaseball" class="ghost-btn">New game</button>
+            </div>
+            <div
+              id="baseballBoard"
+              class="scoreboard baseball-scoreboard"
+            ></div>
+            <div class="baseball-visual-layout">
+              <div
+                id="baseballDartboardVisual"
+                class="dartboard-visual baseball-dartboard"
+              ></div>
+              <div id="baseballInput" class="throw-panel"></div>
+            </div>
+            <div class="history">
+              <div class="history-head">
+                <h3>Innings</h3>
+                <button id="undoBaseball" class="text-btn">
+                  Undo last inning
+                </button>
+              </div>
+              <div id="baseballHistory"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="target" class="view">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">GAME MODE 03</div>
+              <h2>Standard Target</h2>
+              <p>
+                Use the numbered target board. Three darts per round, 10 rounds,
+                highest score wins.
+              </p>
+            </div>
+            <div class="pill">🎯 10 rounds</div>
+          </div>
+          <div id="targetSetup" class="setup-panel">
+            <div class="setup-grid">
+              <div>
+                <label>Rounds</label>
+                <div class="score-options" id="targetRoundOptions">
+                  <button class="score-option active" data-target-rounds="10">
+                    10</button
+                  ><button class="score-option" data-target-rounds="5">5</button
+                  ><button class="score-option" data-target-rounds="15">
+                    15
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label>Players</label>
+                <div id="targetPlayerPicker" class="player-picker"></div>
+                <button class="add-player-inline" data-view="players">
+                  ＋ Manage players
+                </button>
+              </div>
+            </div>
+            <button id="startTarget" class="primary-btn wide">
+              Start target game →
+            </button>
+          </div>
+          <div id="targetGame" class="game-panel hidden">
+            <div class="game-toolbar">
+              <div>
+                <span class="muted">ROUND</span
+                ><strong id="targetRoundLabel">1 / 10</strong>
+              </div>
+              <div>
+                <span class="muted">SCORING</span><strong>1–9 · Bull 10</strong>
+              </div>
+              <button id="newTarget" class="ghost-btn">New game</button>
+            </div>
+            <div id="targetBoard" class="scoreboard"></div>
+            <div class="visual-throw-layout target-visual-layout">
+              <div
+                id="targetDartboardVisual"
+                class="dartboard-visual target-dartboard"
+              ></div>
+              <div id="targetInput" class="throw-panel"></div>
+            </div>
+            <div class="history">
+              <div class="history-head">
+                <h3>Round history</h3>
+                <button id="undoTarget" class="text-btn">
+                  Undo last round
+                </button>
+              </div>
+              <div id="targetHistory"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="leaderboard" class="view">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">THROW LEAGUE</div>
+              <h2>Leaderboard</h2>
+              <p>Ratings are updated automatically when a game is completed.</p>
+            </div>
+            <div class="pill">🏆 Elo ratings</div>
+          </div>
+          <div class="leader-tabs">
+            <button class="score-option active" data-leader="overall">
+              Overall</button
+            ><button class="score-option" data-leader="darts">Darts</button
+            ><button class="score-option" data-leader="baseball">
+              Baseball
+            </button>
+          </div>
+          <div id="leaderboardTable" class="leaderboard-table"></div>
+          <div class="history league-history">
+            <div class="history-head">
+              <h3>Match history</h3>
+              <span class="muted">Latest games</span>
+            </div>
+            <div id="leagueHistory"></div>
+          </div>
+        </section>
+
+        <section id="rules" class="view">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">HOW TO PLAY</div>
+              <h2>Rules</h2>
+              <p>Everything your crew needs before the first dart lands.</p>
+            </div>
+          </div>
+          <div class="rules-grid">
+            <article class="rule-card">
+              <span>🎯</span>
+              <h3>Classic 301 / 501 / 701</h3>
+              <p>
+                Start from the chosen score and subtract the total of each
+                player’s three-dart turn. First player to reach exactly zero
+                wins.
+              </p>
+              <ul>
+                <li>Enter 0–180 for each dart.</li>
+                <li>
+                  If a turn scores more than the remaining score, it is a
+                  <b>bust</b> and the score returns to where it started.
+                </li>
+                <li>Use Undo if a round was entered incorrectly.</li>
+              </ul>
+            </article>
+            <article class="rule-card">
+              <span>⚾</span>
+              <h3>Baseball Darts</h3>
+              <p>
+                Play 9 innings. Every player gets one three-dart turn per
+                inning; the three valid dart scores are added as that inning's
+                runs.
+              </p>
+              <ul>
+                <li>
+                  Each dart accepts 0, 1–20, doubles, triples, 25 or 50, and a
+                  dart is pinned only after it is committed.
+                </li>
+                <li>After inning 9, the highest total wins.</li>
+                <li>Great for casual groups and mixed skill levels.</li>
+              </ul>
+            </article>
+            <article class="rule-card">
+              <span>📱</span>
+              <h3>Live QR Room</h3>
+              <p>
+                The host creates a room and shows the QR code. Friends scan it
+                to open the same scoreboard on their phones.
+              </p>
+              <ul>
+                <li>The host controls scoring.</li>
+                <li>Phones joining the room are viewers.</li>
+                <li>Keep the host tab open while playing.</li>
+              </ul>
+            </article>
+            <article class="rule-card">
+              <span>💡</span>
+              <h3>House rules</h3>
+              <p>
+                Use the app as your scoreboard, then agree on your own checkout,
+                double-out, handicap or bull rules before starting.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section id="players" class="view">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">YOUR CREW</div>
+              <h2>Players</h2>
+              <p>Save your regulars once and reuse them every game.</p>
+            </div>
+            <button id="addPlayerBtn" class="primary-btn">＋ Add player</button>
+          </div>
+          <div id="playersGrid" class="players-grid"></div>
+        </section>
+      </main>
+      <div id="roomModal" class="modal hidden">
+        <div class="modal-card room-modal">
+          <button id="closeRoom" class="modal-close">×</button>
+          <div class="eyebrow">LIVE SCORE ROOM</div>
+          <h3 id="roomTitle">Scan to join</h3>
+          <p id="roomStatus" class="muted room-status">
+            Anyone scanning this code can view the live scoreboard.
+          </p>
+          <div id="qrcode" class="qrcode"></div>
+          <div class="room-code" id="roomCode">—</div>
+          <button id="copyRoomLink" class="secondary-btn wide">
+            Copy room link
+          </button>
         </div>
-        <div id="dartsGame" class="game-panel hidden">
-          <div class="game-toolbar"><div><span class="muted">TARGET</span><strong id="dartsTargetLabel">501</strong></div><div><span class="muted">ROUND</span><strong id="dartsRoundLabel">1</strong></div><div class="checkout-badge"><span class="muted">CHECKOUT</span><strong>Straight Out</strong></div><button id="newDarts" class="ghost-btn">New game</button></div>
-          <div id="dartsBoard" class="scoreboard"></div>
-          <div class="visual-throw-layout"><div id="dartboardVisual" class="dartboard-visual"></div><div id="throwPanel" class="throw-panel"></div></div>
-          <div class="share-strip"><div><strong>Live room</strong><span>Share this game with everyone on their phones.</span></div><button id="shareRoom" class="secondary-btn">▣ Create QR room</button></div>
-          <div class="history"><div class="history-head"><h3>Turn history</h3><button id="undoDarts" class="text-btn">Undo last round</button></div><div id="dartsHistory"></div></div>
+      </div>
+      <div id="toast" class="toast"></div>
+      <div id="modal" class="modal hidden">
+        <div class="modal-card">
+          <button id="closeModal" class="modal-close">×</button>
+          <div class="eyebrow">NEW PLAYER</div>
+          <h3>Add someone to the crew</h3>
+          <form id="playerForm">
+            <label
+              >Name<input
+                id="playerName"
+                class="field"
+                maxlength="20"
+                required
+                placeholder="e.g. Arjun" /></label
+            ><label
+              >Photo <span class="muted">(optional)</span
+              ><input
+                id="playerPhoto"
+                class="field"
+                type="file"
+                accept="image/*"
+            /></label>
+            <div class="avatar-preview" id="avatarPreview">?</div>
+            <button class="primary-btn wide" type="submit">Add player</button>
+          </form>
         </div>
-      </section>
-
-      <section id="baseball" class="view">
-        <div class="section-head"><div><div class="eyebrow">GAME MODE 02</div><h2>Baseball Darts</h2><p>9 innings. Each inning is a fresh chance to smash your friends.</p></div><div class="pill">⚾ 9 innings</div></div>
-        <div id="baseballSetup" class="setup-panel"><div><label>Players</label><div id="baseballPlayerPicker" class="player-picker"></div><button class="add-player-inline" data-view="players">＋ Manage players</button></div><button id="startBaseball" class="primary-btn wide">Start baseball →</button></div>
-        <div id="baseballGame" class="game-panel hidden"><div class="game-toolbar"><div><span class="muted">INNING</span><strong id="inningLabel">1 / 9</strong></div><button id="newBaseball" class="ghost-btn">New game</button></div><div id="baseballBoard" class="scoreboard baseball-scoreboard"></div><div class="baseball-visual-layout"><div id="baseballDartboardVisual" class="dartboard-visual baseball-dartboard"></div><div id="baseballInput" class="throw-panel"></div></div><div class="history"><div class="history-head"><h3>Innings</h3><button id="undoBaseball" class="text-btn">Undo last inning</button></div><div id="baseballHistory"></div></div></div>
-      </section>
-
-      <section id="target" class="view">
-        <div class="section-head"><div><div class="eyebrow">GAME MODE 03</div><h2>Standard Target</h2><p>Use the numbered target board. Three darts per round, 10 rounds, highest score wins.</p></div><div class="pill">🎯 10 rounds</div></div>
-        <div id="targetSetup" class="setup-panel"><div class="setup-grid"><div><label>Rounds</label><div class="score-options" id="targetRoundOptions"><button class="score-option active" data-target-rounds="10">10</button><button class="score-option" data-target-rounds="5">5</button><button class="score-option" data-target-rounds="15">15</button></div></div><div><label>Players</label><div id="targetPlayerPicker" class="player-picker"></div><button class="add-player-inline" data-view="players">＋ Manage players</button></div></div><button id="startTarget" class="primary-btn wide">Start target game →</button></div>
-        <div id="targetGame" class="game-panel hidden">
-          <div class="game-toolbar"><div><span class="muted">ROUND</span><strong id="targetRoundLabel">1 / 10</strong></div><div><span class="muted">SCORING</span><strong>1–9 · Bull 10</strong></div><button id="newTarget" class="ghost-btn">New game</button></div>
-          <div id="targetBoard" class="scoreboard"></div>
-          <div class="visual-throw-layout target-visual-layout"><div id="targetDartboardVisual" class="dartboard-visual target-dartboard"></div><div id="targetInput" class="throw-panel"></div></div>
-          <div class="history"><div class="history-head"><h3>Round history</h3><button id="undoTarget" class="text-btn">Undo last round</button></div><div id="targetHistory"></div></div>
-        </div>
-      </section>
-
-      <section id="leaderboard" class="view">
-        <div class="section-head"><div><div class="eyebrow">THROW LEAGUE</div><h2>Leaderboard</h2><p>Ratings are updated automatically when a game is completed.</p></div><div class="pill">🏆 Elo ratings</div></div>
-        <div class="leader-tabs"><button class="score-option active" data-leader="overall">Overall</button><button class="score-option" data-leader="darts">Darts</button><button class="score-option" data-leader="baseball">Baseball</button></div>
-        <div id="leaderboardTable" class="leaderboard-table"></div>
-        <div class="history league-history"><div class="history-head"><h3>Match history</h3><span class="muted">Latest games</span></div><div id="leagueHistory"></div></div>
-      </section>
-
-      <section id="rules" class="view">
-        <div class="section-head"><div><div class="eyebrow">HOW TO PLAY</div><h2>Rules</h2><p>Everything your crew needs before the first dart lands.</p></div></div>
-        <div class="rules-grid">
-          <article class="rule-card"><span>🎯</span><h3>Classic 301 / 501 / 701</h3><p>Start from the chosen score and subtract the total of each player’s three-dart turn. First player to reach exactly zero wins.</p><ul><li>Enter 0–180 for each dart.</li><li>If a turn scores more than the remaining score, it is a <b>bust</b> and the score returns to where it started.</li><li>Use Undo if a round was entered incorrectly.</li></ul></article>
-          <article class="rule-card"><span>⚾</span><h3>Baseball Darts</h3><p>Play 9 innings. Every player gets one three-dart turn per inning; the three valid dart scores are added as that inning's runs.</p><ul><li>Each dart accepts 0, 1–20, doubles, triples, 25 or 50, and a dart is pinned only after it is committed.</li><li>After inning 9, the highest total wins.</li><li>Great for casual groups and mixed skill levels.</li></ul></article>
-          <article class="rule-card"><span>📱</span><h3>Live QR Room</h3><p>The host creates a room and shows the QR code. Friends scan it to open the same scoreboard on their phones.</p><ul><li>The host controls scoring.</li><li>Phones joining the room are viewers.</li><li>Keep the host tab open while playing.</li></ul></article>
-          <article class="rule-card"><span>💡</span><h3>House rules</h3><p>Use the app as your scoreboard, then agree on your own checkout, double-out, handicap or bull rules before starting.</p></article>
-        </div>
-      </section>
-
-      <section id="players" class="view">
-        <div class="section-head"><div><div class="eyebrow">YOUR CREW</div><h2>Players</h2><p>Save your regulars once and reuse them every game.</p></div><button id="addPlayerBtn" class="primary-btn">＋ Add player</button></div>
-        <div id="playersGrid" class="players-grid"></div>
-      </section>
-    </main>
-    <div id="roomModal" class="modal hidden"><div class="modal-card room-modal"><button id="closeRoom" class="modal-close">×</button><div class="eyebrow">LIVE SCORE ROOM</div><h3 id="roomTitle">Scan to join</h3><p id="roomStatus" class="muted room-status">Anyone scanning this code can view the live scoreboard.</p><div id="qrcode" class="qrcode"></div><div class="room-code" id="roomCode">—</div><button id="copyRoomLink" class="secondary-btn wide">Copy room link</button></div></div>
-    <div id="toast" class="toast"></div>
-    <div id="modal" class="modal hidden"><div class="modal-card"><button id="closeModal" class="modal-close">×</button><div class="eyebrow">NEW PLAYER</div><h3>Add someone to the crew</h3><form id="playerForm"><label>Name<input id="playerName" class="field" maxlength="20" required placeholder="e.g. Arjun"></label><label>Photo <span class="muted">(optional)</span><input id="playerPhoto" class="field" type="file" accept="image/*"></label><div class="avatar-preview" id="avatarPreview">?</div><button class="primary-btn wide" type="submit">Add player</button></form></div></div>
-  </div>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-  <script src="firebase-config.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="app.js"></script>
-</body>
+      </div>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="app.js"></script>
+  </body>
 </html>
