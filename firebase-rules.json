@@ -3,17 +3,18 @@
     "rooms": {
       "$roomId": {
         ".read": "auth != null",
-        ".write": "auth != null"
+        ".write": "auth != null && ((!data.exists() && newData.child('hostUid').val() == auth.uid) || (data.exists() && data.child('hostUid').val() == auth.uid))",
+        ".validate": "newData.hasChildren(['hostUid','state'])",
+        "hostUid": { ".validate": "newData.isString()" },
+        "state": { ".validate": "newData.exists()" }
       }
     },
-    "players": {
-      "$playerId": {
+    "league": {
+      "players": {
         ".read": "auth != null",
         ".write": "auth != null"
-      }
-    },
-    "matches": {
-      "$matchId": {
+      },
+      "matches": {
         ".read": "auth != null",
         ".write": "auth != null"
       }

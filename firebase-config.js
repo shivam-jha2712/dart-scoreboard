@@ -1,8 +1,6 @@
-// THROW live-room configuration.
-// Create a Firebase Web App and Realtime Database, then paste its config below.
-// These browser config values are intended to be public; database rules protect the data.
-const firebaseConfig = {
-  apiKey: "AIzaSyDrCP4WzusZjWgwGczdQT-zB1qrWkN9u1o",
+// THROW live-room Firebase configuration.
+window.THROW_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDrCP4WzusZjWgwGczdQT-zB1qrqWkN9u1o",
   authDomain: "dartscorer-4b8dd.firebaseapp.com",
   databaseURL: "https://dartscorer-4b8dd-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "dartscorer-4b8dd",

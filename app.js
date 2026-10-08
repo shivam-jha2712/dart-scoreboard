@@ -5,7 +5,7 @@ let darts={active:false,target:501,round:1,current:0,players:[],history:[]};
 let baseball={active:false,inning:1,current:0,players:[],history:[]};
 let roomId=new URLSearchParams(location.search).get('room');
 let hostMode=!roomId;
-let firebaseApp=null, db=null, auth=null, currentUid=null, roomRef=null;
+let firebaseApp=null, db=null, auth=null, currentUid=null, roomRef=null, authReadyPromise=null;
 const throwSelection={0:null,1:null,2:null}; let activeThrow=0;
 function savePlayers(){localStorage.setItem('throwPlayers',JSON.stringify(players));}
 function initials(name){return name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()}
@@ -41,14 +41,23 @@ function setLiveStatus(msg){const el=$('#roomStatus');if(el)el.textContent=msg}
 function state(){return JSON.stringify({darts,baseball})}
 function applyState(raw){try{const s=typeof raw==='string'?JSON.parse(raw):raw;if(s.darts){darts=s.darts;if(darts.active){$('#dartsSetup').classList.add('hidden');$('#dartsGame').classList.remove('hidden');renderDarts()}}if(s.baseball){baseball=s.baseball;if(baseball.active){$('#baseballSetup').classList.add('hidden');$('#baseballGame').classList.remove('hidden');renderBaseball()}}}catch(e){console.warn(e)}}
 function initFirebase(){
-  if(!firebaseReady()){setLiveStatus('Live rooms need Firebase setup. See README.');return false}
+  if(!firebaseReady()){setLiveStatus('Firebase config is missing or still contains placeholders.');return false}
+  if(!window.firebase){setLiveStatus('Firebase SDK did not load. Check your internet connection.');return false}
   try{
     firebaseApp=firebase.apps.length?firebase.app():firebase.initializeApp(window.THROW_FIREBASE_CONFIG);
     auth=firebase.auth();db=firebase.database();
-    auth.onAuthStateChanged(user=>{currentUid=user?user.uid:null;if(user && !hostMode) subscribeToRoom();});
-    auth.signInAnonymously().catch(()=>setLiveStatus('Enable Anonymous Authentication in Firebase.'));
+    authReadyPromise=new Promise(resolve=>{
+      const unsubscribe=auth.onAuthStateChanged(user=>{
+        currentUid=user?user.uid:null;
+        if(user){ unsubscribe(); resolve(user); if(!hostMode) subscribeToRoom(); }
+      });
+    });
+    auth.signInAnonymously().catch(err=>{
+      console.error('Anonymous auth failed',err);
+      setLiveStatus('Anonymous sign-in failed: '+(err.code||err.message||'check Firebase Authentication'));
+    });
     return true;
-  }catch(e){console.error(e);setLiveStatus('Firebase configuration error. Check firebase-config.js.');return false}
+  }catch(e){console.error(e);setLiveStatus('Firebase error: '+(e.code||e.message||'check firebase-config.js'));return false}
 }
 function makeRoomId(){return Math.random().toString(36).slice(2,7).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase()}
 function subscribeToRoom(){
@@ -56,11 +65,21 @@ function subscribeToRoom(){
   roomRef=db.ref('rooms/'+roomId);
   roomRef.on('value',snap=>{const room=snap.val();if(!room){setLiveStatus('Room not found. Check the QR/link.');return}applyState(room.state);setLiveStatus('● Live · synced with host')},err=>setLiveStatus('Could not read this room. Check Firebase rules.'));
 }
-function createLiveRoom(){
-  if(!db||!currentUid){setLiveStatus('Live rooms are not ready. Finish Firebase setup first.');return}
-  roomId=makeRoomId();hostMode=true;history.replaceState(null,'',location.pathname+'?room='+encodeURIComponent(roomId));
-  roomRef=db.ref('rooms/'+roomId);
-  roomRef.set({hostUid:currentUid,state:JSON.parse(state()),createdAt:firebase.database.ServerValue.TIMESTAMP}).then(()=>showRoom(roomId)).catch(()=>setLiveStatus('Could not create room. Check Firebase Database rules.'));
+async function createLiveRoom(){
+  if(!firebaseReady() || !db){setLiveStatus('Firebase is not ready. Check firebase-config.js and reload.');return}
+  try{
+    if(authReadyPromise && !currentUid) await authReadyPromise;
+    if(!currentUid){setLiveStatus('Waiting for Firebase sign-in…');return}
+    roomId=makeRoomId();hostMode=true;history.replaceState(null,'',location.pathname+'?room='+encodeURIComponent(roomId));
+    roomRef=db.ref('rooms/'+roomId);
+    await roomRef.set({hostUid:currentUid,state:JSON.parse(state()),createdAt:firebase.database.ServerValue.TIMESTAMP});
+    showRoom(roomId);
+  }catch(err){
+    console.error('Room creation failed',err);
+    const reason=err && (err.code||err.message) ? (err.code||err.message) : 'unknown error';
+    setLiveStatus('Could not create room: '+reason);
+    toast('Room creation failed — check the Live room status.');
+  }
 }
 function broadcast(){
   if(!hostMode||!roomRef)return;
@@ -69,8 +88,10 @@ function broadcast(){
 function showRoom(id){
   $('#roomModal').classList.remove('hidden');$('#qrcode').innerHTML='';
   const link=location.origin+location.pathname+'?room='+encodeURIComponent(id);
-  if(window.QRCode)new QRCode($('#qrcode'),{text:link,width:220,height:220});
-  $('#roomCode').textContent=id;setLiveStatus('Scan this code on every phone. The host controls scoring.');
+  if(window.QRCode){ new QRCode($('#qrcode'),{text:link,width:220,height:220}); } else { $('#qrcode').innerHTML='<p class="muted">QR library did not load. Use the room link below.</p>'; }
+  $('#roomCode').textContent=id;
+  const local=location.hostname==='localhost'||location.hostname==='127.0.0.1';
+  setLiveStatus(local ? 'Room created. For phone scanning, deploy the app to Vercel/Netlify first; localhost is only reachable on this computer.' : '● Room created · scan this code on every phone.');
 }
 $('#shareRoom').onclick=()=>{if(!hostMode)return toast('This phone is a viewer.');if(roomRef&&roomId)showRoom(roomId);else createLiveRoom()};
 $('#closeRoom').onclick=()=>$('#roomModal').classList.add('hidden');
@@ -160,8 +181,6 @@ submitRuns = function(){
 const _newDartsOriginal=$('#newDarts').onclick; $('#newDarts').onclick=function(){darts.__leagueRecorded=false;_newDartsOriginal&&_newDartsOriginal()};
 const _newBaseballOriginal=$('#newBaseball').onclick; $('#newBaseball').onclick=function(){baseball.__leagueRecorded=false;_newBaseballOriginal&&_newBaseballOriginal()};
 
-// Extend Firebase auth callback to load shared league data.
-const _oldInitFirebase=initFirebase;
-initFirebase=function(){const result=_oldInitFirebase(); if(firebaseReady() && auth){auth.onAuthStateChanged(user=>{if(user){currentUid=user.uid;subscribeLeague();}})} return result};
-
+// Load shared league data after Firebase auth is ready.
+if(authReadyPromise){ authReadyPromise.then(()=>subscribeLeague()).catch(()=>{}); }
 loadLeague();
