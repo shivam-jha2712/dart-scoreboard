@@ -20,10 +20,83 @@ $('#playerForm').onsubmit=e=>{e.preventDefault();const name=$('#playerName').val
 $$('.score-option').forEach(b=>b.onclick=()=>{$$('.score-option').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#customScore').classList.toggle('hidden',b.dataset.score!=='custom')});
 $('#startDarts').onclick=()=>{if(darts.players.length<1)return toast('Add at least one player');const sel=$('.score-option.active').dataset.score;const target=sel==='custom'?Number($('#customScore').value):Number(sel);if(!target||target<1)return toast('Choose a valid target');darts={active:true,target,round:1,current:0,players:darts.players.map(p=>({...p,score:target,scored:0})),history:[]};$('#dartsSetup').classList.add('hidden');$('#dartsGame').classList.remove('hidden');renderDarts();broadcast()};
 $('#newDarts').onclick=()=>{darts.active=false;$('#dartsGame').classList.add('hidden');$('#dartsSetup').classList.remove('hidden');renderPicker('dartsPlayerPicker',darts.players.map(p=>p.id));};
-function makeDartboard(){const el=$('#dartboardVisual');if(!el)return;const nums=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];let html='';nums.forEach((n,i)=>{const deg=i*18-81;html+=`<button type="button" class="dart-segment" style="transform:rotate(${deg}deg) skewY(-63deg);" data-seg="${n}"><span style="transform:skewY(63deg) rotate(${18}deg)">${n}</span></button>`});html+='<button type="button" class="dart-center" data-seg="50">BULL</button><div class="dartboard-legend">Tap a number to fill the selected dart · tap BULL for 50</div>';el.innerHTML=html;$$('#dartboardVisual [data-seg]').forEach(b=>b.onclick=()=>{const score=Number(b.dataset.seg);setThrow(activeThrow,score);});}
-function setThrow(i,value){const input=$('#t'+(i+1));if(!input)return;input.value=value;throwSelection[i]=value;activeThrow=(i+1)%3;$$('.throw-inputs input').forEach((x,j)=>x.classList.toggle('selected-throw',j===activeThrow));}
-function renderDarts(){if(!darts.active)return;$('#dartsTargetLabel').textContent=darts.target;$('#dartsRoundLabel').textContent=darts.round;const sorted=[...darts.players].sort((a,b)=>a.score-b.score);$('#dartsBoard').innerHTML=sorted.map(p=>`<div class="score-card ${p.id===darts.players[darts.current].id?'current':''} ${p.score===0?'winner':''}"><div class="player-row">${avatar(p,true)}<strong>${esc(p.name)}</strong></div><div class="score-big">${p.score}</div><div class="score-sub">${p.scored} total points scored</div></div>`).join('');const p=darts.players[darts.current];throwSelection[0]=throwSelection[1]=throwSelection[2]=null;activeThrow=0;$('#throwPanel').innerHTML=`<div class="throw-title"><h3>${avatar(p,true)} ${esc(p.name)}'s throw</h3><span class="muted">Remaining ${p.score}</span></div><div class="throw-inputs"><input id="t1" type="number" min="0" max="180" placeholder="1st"><input id="t2" type="number" min="0" max="180" placeholder="2nd"><input id="t3" type="number" min="0" max="180" placeholder="3rd"></div><div class="throw-actions"><button class="primary-btn" id="submitDarts">Add round →</button></div>`;$$('.throw-inputs input').forEach((x,i)=>x.onfocus=()=>activeThrow=i);$('#submitDarts').onclick=submitDarts;makeDartboard();renderDartsHistory();}
-function submitDarts(){const vals=[1,2,3].map(i=>Math.max(0,Math.min(180,Number($('#t'+i).value)||0)));const total=vals.reduce((a,b)=>a+b,0);const p=darts.players[darts.current];if(total>p.score){toast('Bust! Score stays where it is.');darts.history.push({player:p.name,round:darts.round,throws:vals,total:0,bust:true});nextDarts();return}p.score-=total;p.scored+=total;darts.history.push({player:p.name,round:darts.round,throws:vals,total,bust:false});broadcast();if(p.score===0){renderDarts();setTimeout(()=>toast(`🏆 ${p.name} wins the game!`),100);return}nextDarts()}
+function polarPoint(cx,cy,r,deg){const a=(deg-90)*Math.PI/180;return [cx+r*Math.cos(a),cy+r*Math.sin(a)]}
+function sectorPath(cx,cy,r1,r2,a0,a1){const p1=polarPoint(cx,cy,r2,a0),p2=polarPoint(cx,cy,r2,a1),p3=polarPoint(cx,cy,r1,a1),p4=polarPoint(cx,cy,r1,a0);const large=Math.abs(a1-a0)>180?1:0;return `M ${p1[0]} ${p1[1]} A ${r2} ${r2} 0 ${large} 1 ${p2[0]} ${p2[1]} L ${p3[0]} ${p3[1]} A ${r1} ${r1} 0 ${large} 0 ${p4[0]} ${p4[1]} Z`}
+function dartScoreTarget(score){
+  if(score===50)return {ring:'bull',r:0,angle:0,label:'Bullseye'};
+  if(score===25)return {ring:'outer-bull',r:34,angle:0,label:'Outer bull'};
+  let multiplier=1,number=score;
+  if(score>=1&&score<=20){multiplier=1;number=score}
+  else if(score%3===0&&score/3<=20){multiplier=3;number=score/3}
+  else if(score%2===0&&score/2<=20){multiplier=2;number=score/2}
+  const nums=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
+  const idx=Math.max(0,nums.indexOf(number));
+  const angle=idx*18;
+  return {ring:multiplier===3?'triple':multiplier===2?'double':'single',r:multiplier===3?205:multiplier===2?270:150,angle,label:`${multiplier===3?'T':multiplier===2?'D':'S'}${number}`}
+}
+function makeDartElement(score,index){
+  const t=dartScoreTarget(score); const angle=t.angle+(index-1)*2.8; const r=t.r;
+  if(t.ring==='bull'||t.ring==='outer-bull'){
+    const x=300+Math.cos((angle-90)*Math.PI/180)*r, y=300+Math.sin((angle-90)*Math.PI/180)*r;
+    return `<div class="thrown-dart dart-bull dart-fly-${index}" style="left:${x/6}%;top:${y/6}%;--dart-angle:${angle}deg" title="Dart ${index}: ${score}"><span class="dart-flight">◆</span><span class="dart-shaft"></span><span class="dart-tip"></span><b>${score}</b></div>`;
+  }
+  const x=300+Math.cos((angle-90)*Math.PI/180)*r, y=300+Math.sin((angle-90)*Math.PI/180)*r;
+  return `<div class="thrown-dart dart-fly-${index}" style="left:${x/6}%;top:${y/6}%;--dart-angle:${angle}deg" title="Dart ${index}: ${t.label}"><span class="dart-flight">◆</span><span class="dart-shaft"></span><span class="dart-tip"></span><b>${score}</b></div>`;
+}
+function renderBoardDarts(){
+  const board=$('#dartboardVisual'); if(!board)return;
+  const old=board.querySelector('.thrown-darts-layer'); if(old)old.remove();
+  const vals=[0,1,2].map(i=>throwSelection[i]).filter(v=>Number.isInteger(v));
+  const layer=document.createElement('div'); layer.className='thrown-darts-layer';
+  layer.innerHTML=vals.map((v,i)=>makeDartElement(v,i)).join(''); board.appendChild(layer);
+}
+function makeDartboard(){
+  const el=$('#dartboardVisual'); if(!el)return;
+  const nums=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
+  const cx=300,cy=300,R=286;
+  let svg=`<svg class="dartboard-svg" viewBox="0 0 600 600" aria-label="Interactive darts board"><defs><radialGradient id="boardFace" cx="50%" cy="45%"><stop offset="0" stop-color="#29303c"/><stop offset="1" stop-color="#090c12"/></radialGradient><filter id="boardShadow"><feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#000" flood-opacity=".55"/></filter></defs><circle cx="300" cy="300" r="292" fill="#05070b" filter="url(#boardShadow)"/><circle cx="300" cy="300" r="286" fill="url(#boardFace)" stroke="#687080" stroke-width="5"/>`;
+  for(let i=0;i<20;i++){
+    const a0=i*18-9,a1=i*18+9;
+    const fill=i%2?'#151b24':'#252d38';
+    svg+=`<path class="board-wedge" data-seg="${nums[i]}" d="${sectorPath(cx,cy,42,R,a0,a1)}" fill="${fill}" stroke="#090c12" stroke-width="2"/>`;
+    svg+=`<path d="${sectorPath(cx,cy,105,126,a0,a1)}" fill="${i%2?'#151b24':'#f2eee5'}" opacity=".98"/>`;
+    svg+=`<path d="${sectorPath(cx,cy,126,151,a0,a1)}" fill="#cfd4da" opacity=".92"/>`;
+    svg+=`<path d="${sectorPath(cx,cy,151,205,a0,a1)}" fill="${i%2?'#151b24':'#f2eee5'}" opacity=".98"/>`;
+    svg+=`<path d="${sectorPath(cx,cy,205,225,a0,a1)}" fill="#cfd4da" opacity=".92"/>`;
+    svg+=`<path d="${sectorPath(cx,cy,225,258,a0,a1)}" fill="${i%2?'#171d26':'#f2eee5'}" opacity=".98"/>`;
+    svg+=`<path d="${sectorPath(cx,cy,258,R,a0,a1)}" fill="#090c12" opacity=".98"/>`;
+    const lp=polarPoint(cx,cy,268,i*18); svg+=`<text x="${lp[0]}" y="${lp[1]+7}" class="board-number" text-anchor="middle">${nums[i]}</text>`;
+  }
+  svg+=`<circle cx="300" cy="300" r="225" fill="none" stroke="#e6e8eb" stroke-width="4"/><circle cx="300" cy="300" r="205" fill="none" stroke="#b9f34a" stroke-width="20"/><circle cx="300" cy="300" r="151" fill="none" stroke="#f25b5b" stroke-width="20"/><circle cx="300" cy="300" r="126" fill="none" stroke="#e6e8eb" stroke-width="4"/><circle cx="300" cy="300" r="42" fill="#e7e9eb" stroke="#737b88" stroke-width="4"/><circle cx="300" cy="300" r="27" fill="#b9f34a" stroke="#0b0e13" stroke-width="3"/><circle cx="300" cy="300" r="13" fill="#e84e4e"/><text x="300" y="305" class="bull-label" text-anchor="middle">BULL</text></svg>`;
+  el.innerHTML=`${svg}<div class="dartboard-hint">Tap a scoring area · darts appear where you scored</div><div class="thrown-darts-layer"></div>`;
+  $$('#dartboardVisual .board-wedge').forEach(b=>b.addEventListener('click',()=>setThrow(activeThrow,Number(b.dataset.seg))));
+  renderBoardDarts();
+}
+function setThrow(i,value){const input=$('#t'+(i+1));if(!input)return;input.value=value;throwSelection[i]=value;activeThrow=(i+1)%3;$$('.throw-inputs input').forEach((x,j)=>x.classList.toggle('selected-throw',j===activeThrow));renderBoardDarts();updateRoundTotal();}
+function updateRoundTotal(){const total=throwSelection[0]+throwSelection[1]+throwSelection[2];const el=$('#roundTotal');if(el)el.textContent=total||0;const chips=$$('#roundDartSummary .round-dart-chip');chips.forEach((c,i)=>{const v=throwSelection[i];c.querySelector('.chip-score').textContent=v??'—';c.classList.toggle('filled',Number.isInteger(v));});}
+function renderDarts(){if(!darts.active)return;$('#dartsTargetLabel').textContent=darts.target;$('#dartsRoundLabel').textContent=darts.round;const sorted=[...darts.players].sort((a,b)=>a.score-b.score);$('#dartsBoard').innerHTML=sorted.map(p=>`<div class="score-card ${p.id===darts.players[darts.current].id?'current':''} ${p.score===0?'winner':''}"><div class="player-row">${avatar(p,true)}<strong>${esc(p.name)}</strong></div><div class="score-big">${p.score}</div><div class="score-sub">${p.scored} total points scored</div></div>`).join('');const p=darts.players[darts.current];throwSelection[0]=throwSelection[1]=throwSelection[2]=null;activeThrow=0;$('#throwPanel').innerHTML=`<div class="throw-title"><div><h3>${avatar(p,true)} ${esc(p.name)}'s throw</h3><span class="turn-subtitle">Tap the board or enter each dart score</span></div><span class="muted">Remaining ${p.score}</span></div><div id="roundDartSummary" class="round-dart-summary"><div class="round-dart-chip"><span>DART 1</span><b class="chip-score">—</b></div><div class="round-dart-chip"><span>DART 2</span><b class="chip-score">—</b></div><div class="round-dart-chip"><span>DART 3</span><b class="chip-score">—</b></div><div class="round-total-box"><span>ROUND TOTAL</span><b id="roundTotal">0</b></div></div><div class="throw-inputs"><input id="t1" type="number" min="0" max="60" step="1" placeholder="1st"><input id="t2" type="number" min="0" max="60" step="1" placeholder="2nd"><input id="t3" type="number" min="0" max="60" step="1" placeholder="3rd"></div><div class="throw-actions"><button class="primary-btn" id="submitDarts">Add round →</button></div>`;$$('.throw-inputs input').forEach((x,i)=>{x.onfocus=()=>activeThrow=i;x.oninput=()=>{const v=x.value.trim();throwSelection[i]=v===''?null:Number(v);renderBoardDarts();updateRoundTotal()};});$('#submitDarts').onclick=submitDarts;makeDartboard();updateRoundTotal();renderDartsHistory();}
+function isValidDartScore(value){
+  if(!Number.isInteger(value) || value<0 || value>60)return false;
+  if(value===0 || value===25 || value===50)return true;
+  if(value>=1 && value<=20)return true;
+  if(value%2===0 && value/2>=1 && value/2<=20)return true;
+  if(value%3===0 && value/3>=1 && value/3<=20)return true;
+  return false;
+}
+function submitDarts(){
+  const raw=[1,2,3].map(i=>$('#t'+i).value.trim());
+  const vals=raw.map(v=>v===''?0:Number(v));
+  const invalid=vals.findIndex(v=>!isValidDartScore(v));
+  if(invalid!==-1){
+    const dartNo=invalid+1;
+    toast(`Invalid dart ${dartNo}. Use 0, 1–20, doubles, triples, 25 or 50.`);
+    $('#t'+dartNo).focus();
+    return;
+  }
+  const total=vals.reduce((a,b)=>a+b,0);
+  const p=darts.players[darts.current];
+  if(total>p.score){toast('Bust! Score stays where it is.');darts.history.push({player:p.name,round:darts.round,throws:vals,total:0,bust:true});nextDarts();return}
+  p.score-=total;p.scored+=total;darts.history.push({player:p.name,round:darts.round,throws:vals,total,bust:false});broadcast();if(p.score===0){renderDarts();setTimeout(()=>toast(`🏆 ${p.name} wins the game!`),100);return}nextDarts()}
 function nextDarts(){darts.current=(darts.current+1)%darts.players.length;if(darts.current===0)darts.round++;renderDarts();broadcast()};
 function renderDartsHistory(){const h=[...darts.history].reverse().slice(0,8);$('#dartsHistory').innerHTML=h.length?h.map(x=>`<div class="history-row"><span>R${x.round} · ${esc(x.player)}</span><strong>${x.bust?'BUST':`+${x.total}`}</strong></div>`).join(''):'<div class="muted">No throws yet.</div>'}
 $('#undoDarts').onclick=()=>{if(!darts.history.length)return;const last=darts.history.pop();const p=darts.players.find(x=>x.name===last.player);if(p&&!last.bust){p.score+=last.total;p.scored-=last.total}darts.current=darts.players.findIndex(x=>x.name===last.player);darts.round=Math.max(1,last.round);renderDarts();broadcast()};
