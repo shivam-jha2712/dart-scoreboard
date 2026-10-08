@@ -3,22 +3,29 @@ const colors=['#b9f34a','#7c5cff','#4dd7ff','#ff9f43','#ff6b9d','#62e6a5'];
 let players=JSON.parse(localStorage.getItem('throwPlayers')||'[]');
 let darts={active:false,target:501,round:1,current:0,players:[],history:[]};
 let baseball={active:false,inning:1,current:0,players:[],history:[]};
+let target={active:false,round:1,rounds:10,current:0,players:[],history:[]};
 let roomId=new URLSearchParams(location.search).get('room');
 let hostMode=!roomId;
 let firebaseApp=null, db=null, auth=null, currentUid=null, roomRef=null, authReadyPromise=null;
 const throwSelection={0:null,1:null,2:null};
 let draftThrows=[null,null,null];
 let activeThrow=0;
+const baseballThrowSelection={0:null,1:null,2:null};
+let baseballDraftThrows=[null,null,null];
+let baseballActiveThrow=0;
+const targetThrowSelection={0:null,1:null,2:null};
+let targetDraftThrows=[null,null,null];
+let targetActiveThrow=0;
 function savePlayers(){localStorage.setItem('throwPlayers',JSON.stringify(players));}
 function initials(name){return name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()}
 function avatar(p,small=false){return p.photo?`<img class="${small?'mini-avatar':'avatar'}" src="${p.photo}" alt="${esc(p.name)}">`:`<span class="${small?'mini-avatar':'avatar'}" style="background:${p.color||colors[0]}">${initials(p.name)}</span>`}
-function nav(view){$$('.view').forEach(v=>v.classList.toggle('active-view',v.id===view));$$('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='darts')renderPicker('dartsPlayerPicker',darts.players.map(p=>p.id));if(view==='baseball')renderPicker('baseballPlayerPicker',baseball.players.map(p=>p.id));}
+function nav(view){$$('.view').forEach(v=>v.classList.toggle('active-view',v.id===view));$$('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='darts')renderPicker('dartsPlayerPicker',darts.players.map(p=>p.id));if(view==='baseball')renderPicker('baseballPlayerPicker',baseball.players.map(p=>p.id));if(view==='target')renderPicker('targetPlayerPicker',target.players.map(p=>p.id));}
 $$('[data-view]').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.view)));
-function renderPlayers(){const grid=$('#playersGrid');if(!players.length){grid.innerHTML='<div class="setup-panel"><h3 style="font-family:Space Grotesk;margin-top:0">No players yet.</h3><p style="color:var(--muted)">Add your crew and their faces/initials will appear on the scoreboard.</p></div>';return}grid.innerHTML=players.map(p=>`<div class="player-card">${avatar(p)}<div class="player-card-info"><strong>${esc(p.name)}</strong><span>Ready to throw</span></div><button class="delete-btn" data-del="${p.id}" title="Delete">×</button></div>`).join('');$$('[data-del]').forEach(b=>b.onclick=()=>{players=players.filter(p=>p.id!==b.dataset.del);savePlayers();renderPlayers();renderPicker('dartsPlayerPicker',darts.players.map(p=>p.id));renderPicker('baseballPlayerPicker',baseball.players.map(p=>p.id));});}
+function renderPlayers(){const grid=$('#playersGrid');if(!players.length){grid.innerHTML='<div class="setup-panel"><h3 style="font-family:Space Grotesk;margin-top:0">No players yet.</h3><p style="color:var(--muted)">Add your crew and their faces/initials will appear on the scoreboard.</p></div>';return}grid.innerHTML=players.map(p=>`<div class="player-card">${avatar(p)}<div class="player-card-info"><strong>${esc(p.name)}</strong><span>Ready to throw</span></div><button class="delete-btn" data-del="${p.id}" title="Delete">×</button></div>`).join('');$$('[data-del]').forEach(b=>b.onclick=()=>{players=players.filter(p=>p.id!==b.dataset.del);savePlayers();renderPlayers();renderPicker('dartsPlayerPicker',darts.players.map(p=>p.id));renderPicker('baseballPlayerPicker',baseball.players.map(p=>p.id));renderPicker('targetPlayerPicker',target.players.map(p=>p.id));});}
 function renderPicker(id,selected){const el=$('#'+id);if(!players.length){el.innerHTML='<span class="muted">Add players first →</span>';return}el.innerHTML=players.map(p=>`<button class="player-chip ${selected.includes(p.id)?'selected':''}" data-pick="${p.id}">${avatar(p,true)}${esc(p.name)}</button>`).join('');$$('#'+id+' [data-pick]').forEach(b=>b.onclick=()=>{const isD=id.startsWith('darts');const arr=isD?darts.players:baseball.players;const p=players.find(x=>x.id===b.dataset.pick);if(arr.some(x=>x.id===p.id)){if(isD)darts.players=arr.filter(x=>x.id!==p.id);else baseball.players=arr.filter(x=>x.id!==p.id)}else{if(isD)darts.players=[...arr,p];else baseball.players=[...arr,p]}renderPicker(id,(isD?darts.players:baseball.players).map(x=>x.id));});}
 function openModal(){$('#modal').classList.remove('hidden');$('#playerName').focus()};function closeModal(){$('#modal').classList.add('hidden');$('#playerForm').reset();$('#avatarPreview').innerHTML='?'}
 $('#addPlayerBtn').onclick=openModal;$('#closeModal').onclick=closeModal;$('#playerPhoto').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>$('#avatarPreview').innerHTML=`<img src="${r.result}" alt="preview">`;r.readAsDataURL(f)};
-$('#playerForm').onsubmit=e=>{e.preventDefault();const name=$('#playerName').value.trim();if(!name)return;const f=$('#playerPhoto').files[0];const add=photo=>{players.push({id:crypto.randomUUID(),name,photo:photo||'',color:colors[players.length%colors.length]});savePlayers();renderPlayers();renderPicker('dartsPlayerPicker',darts.players.map(p=>p.id));renderPicker('baseballPlayerPicker',baseball.players.map(p=>p.id));closeModal();toast(`${name} joined the crew ✦`)};if(f){const r=new FileReader();r.onload=()=>add(r.result);r.readAsDataURL(f)}else add('')};
+$('#playerForm').onsubmit=e=>{e.preventDefault();const name=$('#playerName').value.trim();if(!name)return;const f=$('#playerPhoto').files[0];const add=photo=>{players.push({id:crypto.randomUUID(),name,photo:photo||'',color:colors[players.length%colors.length]});savePlayers();renderPlayers();renderPicker('dartsPlayerPicker',darts.players.map(p=>p.id));renderPicker('baseballPlayerPicker',baseball.players.map(p=>p.id));renderPicker('targetPlayerPicker',target.players.map(p=>p.id));closeModal();toast(`${name} joined the crew ✦`)};if(f){const r=new FileReader();r.onload=()=>add(r.result);r.readAsDataURL(f)}else add('')};
 $$('.score-option').forEach(b=>b.onclick=()=>{$$('.score-option').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#customScore').classList.toggle('hidden',b.dataset.score!=='custom')});
 $('#startDarts').onclick=()=>{if(darts.players.length<1)return toast('Add at least one player');const sel=$('.score-option.active').dataset.score;const target=sel==='custom'?Number($('#customScore').value):Number(sel);if(!target||target<1)return toast('Choose a valid target');darts={active:true,target,round:1,current:0,players:darts.players.map(p=>({...p,score:target,scored:0})),history:[]};$('#dartsSetup').classList.add('hidden');$('#dartsGame').classList.remove('hidden');renderDarts();broadcast()};
 $('#newDarts').onclick=()=>{darts.active=false;$('#dartsGame').classList.add('hidden');$('#dartsSetup').classList.remove('hidden');renderPicker('dartsPlayerPicker',darts.players.map(p=>p.id));};
@@ -37,6 +44,7 @@ function dartScoreTarget(score){
   return {ring:multiplier===3?'triple':multiplier===2?'double':'single',r:multiplier===3?137:multiplier===2?227:180,angle,label:`${multiplier===3?'T':multiplier===2?'D':'S'}${number}`};
 }
 function makeDartElement(score,index){
+  if(score===0)return '';
   const t=dartScoreTarget(score);
   const radialDeg=t.angle + (index-1)*2.0;
   const a=(radialDeg-90)*Math.PI/180;
@@ -218,19 +226,136 @@ function submitDarts(){
 function nextDarts(){darts.current=(darts.current+1)%darts.players.length;if(darts.current===0)darts.round++;renderDarts();broadcast()};
 function renderDartsHistory(){const h=[...darts.history].reverse().slice(0,8);$('#dartsHistory').innerHTML=h.length?h.map(x=>`<div class="history-row"><span>R${x.round} · ${esc(x.player)}</span><strong>${x.bust?'BUST':`+${x.total}`}</strong></div>`).join(''):'<div class="muted">No throws yet.</div>'}
 $('#undoDarts').onclick=()=>{if(!darts.history.length)return;const last=darts.history.pop();const p=darts.players.find(x=>x.name===last.player);if(p&&!last.bust){p.score+=last.total;p.scored-=last.total}darts.current=darts.players.findIndex(x=>x.name===last.player);darts.round=Math.max(1,last.round);renderDarts();broadcast()};
-$('#startBaseball').onclick=()=>{if(baseball.players.length<1)return toast('Add at least one player');baseball={active:true,inning:1,current:0,players:baseball.players.map(p=>({...p,total:0,innings:Array(9).fill(null)})),history:[]};$('#baseballSetup').classList.add('hidden');$('#baseballGame').classList.remove('hidden');renderBaseball();broadcast()};
-$('#newBaseball').onclick=()=>{$('#baseballGame').classList.add('hidden');$('#baseballSetup').classList.remove('hidden')};
-function renderBaseball(){const cp=baseball.players[baseball.current];$('#inningLabel').textContent=`${baseball.inning} / 9`;$('#baseballBoard').innerHTML=baseball.players.map(p=>`<div class="score-card ${p.id===cp.id?'current':''}"><div class="player-row">${avatar(p,true)}<strong>${esc(p.name)}</strong></div><div class="score-big">${p.total}</div><div class="score-sub">Inning ${baseball.inning}: ${p.innings[baseball.inning-1]??'—'}</div></div>`).join('');$('#baseballInput').innerHTML=`<div class="throw-title"><h3>⚾ ${esc(cp.name)} · inning ${baseball.inning}</h3><span class="muted">Enter runs</span></div><div class="throw-inputs" style="grid-template-columns:1fr"><input id="runs" type="number" min="0" max="50" placeholder="0"></div><div class="throw-actions"><button class="primary-btn" id="submitRuns">Record inning →</button></div>`;$('#submitRuns').onclick=submitRuns;$('#baseballHistory').innerHTML=[...baseball.history].reverse().slice(0,10).map(x=>`<div class="history-row"><span>Inning ${x.inning} · ${esc(x.player)}</span><strong>+${x.runs}</strong></div>`).join('')||'<div class="muted">No innings yet.</div>'}
-function submitRuns(){const runs=Math.max(0,Math.min(50,Number($('#runs').value)||0)),p=baseball.players[baseball.current];p.innings[baseball.inning-1]=runs;p.total+=runs;baseball.history.push({inning:baseball.inning,player:p.name,runs});baseball.current=(baseball.current+1)%baseball.players.length;if(baseball.current===0){if(baseball.inning===9){renderBaseball();broadcast();const winner=[...baseball.players].sort((a,b)=>b.total-a.total)[0];setTimeout(()=>toast(`🏆 ${winner.name} wins with ${winner.total}!`),100);return}baseball.inning++}renderBaseball();broadcast()}
-$('#undoBaseball').onclick=()=>{if(!baseball.history.length)return;const x=baseball.history.pop(),p=baseball.players.find(p=>p.name===x.player);if(p){p.total-=x.runs;p.innings[x.inning-1]=null}baseball.inning=x.inning;baseball.current=baseball.players.findIndex(p=>p.name===x.player);renderBaseball();broadcast()};
-$('#resetApp').onclick=()=>{if(confirm('Reset the current game?')){darts.active=false;baseball.active=false;$('#dartsGame,#baseballGame').forEach(x=>x.classList.add('hidden'));$('#dartsSetup,#baseballSetup').forEach(x=>x.classList.remove('hidden'));broadcast();toast('Game reset')}};
+$('#startBaseball').onclick=()=>{if(baseball.players.length<1)return toast('Add at least one player');baseball={active:true,inning:1,current:0,players:baseball.players.map(p=>({...p,total:0,innings:Array(9).fill(null),inningDarts:Array.from({length:9},()=>[null,null,null])})),history:[]};resetBaseballThrowDraft();$('#baseballSetup').classList.add('hidden');$('#baseballGame').classList.remove('hidden');renderBaseball();broadcast()};
+$('#newBaseball').onclick=()=>{$('#baseballGame').classList.add('hidden');$('#baseballSetup').classList.remove('hidden');resetBaseballThrowDraft()};
+function resetBaseballThrowDraft(){baseballThrowSelection[0]=baseballThrowSelection[1]=baseballThrowSelection[2]=null;baseballDraftThrows[0]=baseballDraftThrows[1]=baseballDraftThrows[2]=null;baseballActiveThrow=0}
+function makeBaseballDartElement(score,index){return makeDartElement(score,index).replace('dart-score-badge">'+score,'dart-score-badge">'+score)}
+function renderBaseballDarts(){
+  const board=$('#baseballDartboardVisual'); if(!board)return;
+  let layer=board.querySelector('.planted-darts-real-layer');
+  if(layer)layer.remove();
+  layer=document.createElement('div'); layer.className='planted-darts-real-layer';
+  layer.innerHTML=[0,1,2].map(i=>Number.isInteger(baseballThrowSelection[i])?makeBaseballDartElement(baseballThrowSelection[i],i):'').join('');
+  board.appendChild(layer);
+}
+function setBaseballThrow(i,value,fromBoard=false){
+  const input=$('#b'+(i+1));if(!input)return;
+  const v=Number(value); input.value=String(value); baseballDraftThrows[i]=v;
+  if(fromBoard){baseballThrowSelection[i]=v;baseballActiveThrow=Math.min(i+1,2);$$('#baseballInput .throw-inputs input').forEach((x,j)=>x.classList.toggle('selected-throw',j===baseballActiveThrow));updateBaseballRoundTotal();renderBaseballDarts()}
+  else updateBaseballRoundTotal();
+}
+function commitBaseballThrow(i){
+  const input=$('#b'+(i+1));if(!input)return false;
+  const raw=input.value.trim();
+  if(raw===''){toast(`Dart ${i+1}: enter a score first.`);return false}
+  if(!/^\d+$/.test(raw)){toast(`Dart ${i+1}: enter a whole number.`);return false}
+  const v=Number(raw);
+  if(!isValidDartScore(v)){toast(`Invalid dart ${i+1}. Use 0, 1–20, doubles, triples, 25 or 50.`);return false}
+  baseballDraftThrows[i]=v;baseballThrowSelection[i]=v;input.classList.remove('pending-throw');input.classList.add('committed-throw');
+  updateBaseballRoundTotal();renderBaseballDarts();if(i<2)baseballActiveThrow=i+1;return true;
+}
+function updateBaseballRoundTotal(){const total=baseballDraftThrows.reduce((a,b)=>a+(Number.isInteger(b)?b:0),0);const el=$('#baseballRoundTotal');if(el)el.textContent=total;const chips=$$('#baseballRoundDartSummary .round-dart-chip');chips.forEach((c,i)=>{const v=baseballDraftThrows[i];c.querySelector('.chip-score').textContent=v??'—';c.classList.toggle('filled',Number.isInteger(v));})}
+function baseballHitSvg(){
+  const nums=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5],cx=300,cy=300;
+  let svg=`<svg class="dartboard-svg dartboard-hit-layer" viewBox="0 0 600 600" aria-label="Interactive realistic baseball darts board">`;
+  for(let i=0;i<20;i++){const a0=i*18-9,a1=i*18+9;svg+=`<path class="hit-zone" data-baseball-score="${nums[i]}" d="${sectorPath(cx,cy,150,268,a0,a1)}"/>`;svg+=`<path class="hit-zone" data-baseball-score="${nums[i]*3}" d="${sectorPath(cx,cy,126,150,a0,a1)}"/>`;svg+=`<path class="hit-zone" data-baseball-score="${nums[i]*2}" d="${sectorPath(cx,cy,216,239,a0,a1)}"/>`}svg+=`<circle class="hit-zone" data-baseball-score="25" cx="300" cy="300" r="43"/><circle class="hit-zone" data-baseball-score="50" cx="300" cy="300" r="23"/></svg>`;return svg
+}
+function renderBaseballVisual(){
+  const board=$('#baseballDartboardVisual');if(!board)return;
+  board.innerHTML=`<div class="real-board-wrap"><img class="real-board-image" src="dartboard-realistic.png" alt="Hyper-realistic steel-tip darts board"><div class="board-glass-highlight"></div>${baseballHitSvg()}</div><div class="baseball-board-caption">BASEBALL DARTS · INNING ${baseball.inning}</div><div class="dartboard-hint">Tap a scoring area · a dart is planted only after that score is committed</div>`;
+  $$('#baseballDartboardVisual .hit-zone').forEach(z=>z.addEventListener('click',()=>setBaseballThrow(baseballActiveThrow,Number(z.dataset.baseballScore),true)));
+  renderBaseballDarts();
+}
+function renderBaseball(){const cp=baseball.players[baseball.current];$('#inningLabel').textContent=`${baseball.inning} / 9`;$('#baseballBoard').innerHTML=baseball.players.map(p=>`<div class="score-card ${p.id===cp.id?'current':''}"><div class="player-row">${avatar(p,true)}<strong>${esc(p.name)}</strong></div><div class="score-big">${p.total}</div><div class="score-sub">Inning ${baseball.inning}: ${p.innings[baseball.inning-1]??'—'}</div></div>`).join('');resetBaseballThrowDraft();$('#baseballInput').innerHTML=`<div class="throw-title"><div><h3>⚾ ${esc(cp.name)} · inning ${baseball.inning}</h3><span class="turn-subtitle">Enter each dart score. Each committed dart is pinned to the board; the three dart scores become this inning's runs.</span></div><span class="muted">3 DARTS / INNING</span></div><div id="baseballRoundDartSummary" class="round-dart-summary"><div class="round-dart-chip"><span>DART 1</span><b class="chip-score">—</b></div><div class="round-dart-chip"><span>DART 2</span><b class="chip-score">—</b></div><div class="round-dart-chip"><span>DART 3</span><b class="chip-score">—</b></div><div class="round-total-box"><span>INNING RUNS</span><b id="baseballRoundTotal">0</b></div></div><div class="throw-inputs">${[1,2,3].map(n=>`<div class="dart-entry" data-entry="${n-1}"><label>DART ${n}</label><input id="b${n}" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="Score"><button type="button" class="commit-dart baseball-commit" data-baseball-commit="${n-1}" title="Commit Dart ${n}">✓</button></div>`).join('')}</div><div class="dart-keypad">${[1,2,3,4,5,6,7,8,9,0].map(n=>`<button type="button" data-baseball-key="${n}">${n}</button>`).join('')}<button type="button" data-baseball-key="back">⌫</button><button type="button" data-baseball-key="clear">Clear</button></div><div class="throw-actions"><button class="primary-btn" id="submitRuns">Record inning →</button></div>`;
+  $$('#baseballInput .throw-inputs input').forEach((input,i)=>{input.addEventListener('focus',()=>{baseballActiveThrow=i;$$('#baseballInput .dart-entry').forEach((e,j)=>e.classList.toggle('active',j===i))});input.addEventListener('input',()=>{const raw=input.value.replace(/\D/g,'').slice(0,2);if(input.value!==raw)input.value=raw;baseballDraftThrows[i]=raw===''?null:Number(raw);input.classList.add('pending-throw');updateBaseballRoundTotal()});input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitBaseballThrow(i)}})});
+  $$('#baseballInput [data-baseball-commit]').forEach(btn=>btn.addEventListener('click',()=>commitBaseballThrow(Number(btn.dataset.baseballCommit))));
+  $$('#baseballInput [data-baseball-key]').forEach(btn=>btn.addEventListener('click',()=>{const k=btn.dataset.baseballKey,input=$('#b'+(baseballActiveThrow+1));if(!input)return;if(k==='back')input.value=input.value.slice(0,-1);else if(k==='clear')input.value='';else input.value=(input.value+k).slice(0,2);baseballDraftThrows[baseballActiveThrow]=input.value===''?null:Number(input.value);input.classList.add('pending-throw');updateBaseballRoundTotal()}));
+  $('#submitRuns').onclick=submitRuns;renderBaseballVisual();$('#baseballHistory').innerHTML=[...baseball.history].reverse().slice(0,10).map(x=>`<div class="history-row"><span>Inning ${x.inning} · ${esc(x.player)}</span><strong>+${x.runs}</strong></div>`).join('')||'<div class="muted">No innings yet.</div>'}
+function submitRuns(){
+  for(let i=0;i<3;i++){const raw=$('#b'+(i+1).toString()).value.trim();if(raw!==''&&!Number.isInteger(baseballThrowSelection[i])){if(!commitBaseballThrow(i))return}}
+  const raw=[1,2,3].map(i=>$('#b'+i).value.trim()),vals=raw.map(v=>v===''?0:Number(v));
+  const invalid=vals.findIndex(v=>!isValidDartScore(v));if(invalid!==-1){toast(`Invalid dart ${invalid+1}. Use 0, 1–20, doubles, triples, 25 or 50.`);$('#b'+(invalid+1)).focus();return}
+  const runs=vals.reduce((a,b)=>a+b,0),p=baseball.players[baseball.current];p.innings[baseball.inning-1]=runs;p.total+=runs;if(p.inningDarts)p.inningDarts[baseball.inning-1]=vals.slice();baseball.history.push({inning:baseball.inning,player:p.name,runs,throws:vals});baseball.current=(baseball.current+1)%baseball.players.length;if(baseball.current===0){if(baseball.inning===9){renderBaseball();broadcast();const winner=[...baseball.players].sort((a,b)=>b.total-a.total)[0];setTimeout(()=>toast(`🏆 ${winner.name} wins with ${winner.total}!`),100);return}baseball.inning++}renderBaseball();broadcast()}
+$('#undoBaseball').onclick=()=>{if(!baseball.history.length)return;const x=baseball.history.pop(),p=baseball.players.find(p=>p.name===x.player);if(p){p.total-=x.runs;p.innings[x.inning-1]=null;if(p.inningDarts)p.inningDarts[x.inning-1]=[null,null,null]}baseball.inning=x.inning;baseball.current=baseball.players.findIndex(p=>p.name===x.player);renderBaseball();broadcast()};
+// ---------- STANDARD TARGET GAME ----------
+function resetTargetThrowDraft(){targetThrowSelection[0]=targetThrowSelection[1]=targetThrowSelection[2]=null;targetDraftThrows[0]=targetDraftThrows[1]=targetDraftThrows[2]=null;targetActiveThrow=0}
+function isValidTargetScore(v){return Number.isInteger(v)&&v>=0&&v<=10}
+function targetScoreRadius(score){if(score===10)return 0;return 255-(score-1)*28}
+function makeTargetDartElement(score,index){
+  if(score===0)return '';
+  const angle=-42 + index*120 + ((target.round-1)*7)%18;
+  const r=score===10?(index-1)*7:targetScoreRadius(score);
+  const rad=(angle-90)*Math.PI/180;
+  const x=300+Math.cos(rad)*r, y=300+Math.sin(rad)*r;
+  const left=(x/600*100).toFixed(4), top=(y/600*100).toFixed(4);
+  const src=index===1?'dart-red.png':'dart-yellow.png';
+  const cssAngle=(angle-90).toFixed(2);
+  return `<div class="planted-dart-real target-planted-dart" data-score="${score}" style="--x:${left}%;--y:${top}%;--rot:${cssAngle}deg;--delay:${(index*.07).toFixed(2)}s"><div class="dart-real-shadow"></div><img src="${src}" alt="${score} point dart" draggable="false"><span class="dart-score-badge">${score}</span></div>`;
+}
+function renderTargetDarts(){
+  const board=$('#targetDartboardVisual');if(!board)return;
+  let layer=board.querySelector('.planted-darts-real-layer');if(layer)layer.remove();
+  layer=document.createElement('div');layer.className='planted-darts-real-layer';
+  layer.innerHTML=[0,1,2].map(i=>Number.isInteger(targetThrowSelection[i])?makeTargetDartElement(targetThrowSelection[i],i):'').join('');board.appendChild(layer);
+}
+function targetAnnulusPath(cx,cy,rInner,rOuter){
+  const p1=polarPoint(cx,cy,rOuter,0),p2=polarPoint(cx,cy,rOuter,180),p3=polarPoint(cx,cy,rInner,180),p4=polarPoint(cx,cy,rInner,0);
+  return `M ${p1[0]} ${p1[1]} A ${rOuter} ${rOuter} 0 1 1 ${p2[0]} ${p2[1]} A ${rOuter} ${rOuter} 0 1 1 ${p1[0]} ${p1[1]} M ${p4[0]} ${p4[1]} A ${rInner} ${rInner} 0 1 0 ${p3[0]} ${p3[1]} A ${rInner} ${rInner} 0 1 0 ${p4[0]} ${p4[1]} Z`;
+}
+function targetHitSvg(){
+  const cx=300,cy=300;let svg=`<svg class="dartboard-svg dartboard-hit-layer" viewBox="0 0 600 600" aria-label="Interactive standard target board">`;
+  const boundaries=[270,240,210,180,150,120,90,60,30,18];
+  for(let score=1;score<=9;score++){const outer=boundaries[score-1],inner=boundaries[score];svg+=`<path class="hit-zone" data-target-score="${score}" d="${targetAnnulusPath(cx,cy,inner,outer)}"/>`;}
+  svg+=`<circle class="hit-zone target-bull-zone" data-target-score="10" cx="300" cy="300" r="18"/></svg>`;
+  return svg;
+}
+function setTargetThrow(i,value,fromBoard=false){
+  const input=$('#g'+(i+1));if(!input)return;const v=Number(value);input.value=String(value);targetDraftThrows[i]=v;input.classList.add('pending-throw');
+  if(fromBoard){targetActiveThrow=i;$$('#targetInput .dart-entry').forEach((e,j)=>e.classList.toggle('active',j===i));updateTargetRoundTotal();}
+  else updateTargetRoundTotal();
+}
+function commitTargetThrow(i){
+  const input=$('#g'+(i+1));if(!input)return false;const raw=input.value.trim();if(raw===''){toast(`Dart ${i+1}: enter a target score first.`);return false}
+  if(!/^\d+$/.test(raw)){toast(`Dart ${i+1}: enter a whole number.`);return false}
+  const v=Number(raw);if(!isValidTargetScore(v)){toast(`Invalid target dart ${i+1}. Use 0–9 or 10 for the bull.`);return false}
+  targetDraftThrows[i]=v;targetThrowSelection[i]=v;input.classList.remove('pending-throw');input.classList.add('committed-throw');updateTargetRoundTotal();renderTargetDarts();if(i<2)targetActiveThrow=i+1;return true;
+}
+function updateTargetRoundTotal(){const total=targetDraftThrows.reduce((a,b)=>a+(Number.isInteger(b)?b:0),0);const el=$('#targetRoundTotal');if(el)el.textContent=total;const chips=$$('#targetRoundDartSummary .round-dart-chip');chips.forEach((c,i)=>{const v=targetDraftThrows[i];c.querySelector('.chip-score').textContent=v??'—';c.classList.toggle('filled',Number.isInteger(v));});}
+function renderTargetVisual(){
+  const board=$('#targetDartboardVisual');if(!board)return;
+  board.innerHTML=`<div class="real-board-wrap target-real-board-wrap"><img class="real-board-image target-board-image" src="target-board-realistic.png" alt="Hyper-realistic numbered standard target board"><div class="board-glass-highlight"></div>${targetHitSvg()}</div><div class="target-board-caption">STANDARD TARGET · 1–9 RINGS · BULL 10</div><div class="dartboard-hint">Select a ring, then commit the dart to plant it on the board</div>`;
+  $$('#targetDartboardVisual .hit-zone').forEach(z=>z.addEventListener('click',()=>setTargetThrow(targetActiveThrow,Number(z.dataset.targetScore),true)));
+  renderTargetDarts();
+}
+function renderTarget(){
+  if(!target.active)return;const cp=target.players[target.current];if(!cp)return;
+  $('#targetRoundLabel').textContent=`${target.round} / ${target.rounds}`;
+  $('#targetBoard').innerHTML=target.players.map(p=>`<div class="score-card ${p.id===cp.id?'current':''}"><div class="player-row">${avatar(p,true)}<strong>${esc(p.name)}</strong></div><div class="score-big">${p.total}</div><div class="score-sub">${p.roundsPlayed||0} rounds · ${p.total} points</div></div>`).join('');
+  resetTargetThrowDraft();const panel=$('#targetInput');
+  panel.innerHTML=`<div class="throw-title"><div><h3>${avatar(cp,true)} ${esc(cp.name)}'s throw</h3><span class="turn-subtitle">Choose a ring or enter its value. A dart is planted only after that dart is committed.</span></div><span class="muted">ROUND ${target.round} / ${target.rounds}</span></div><div id="targetRoundDartSummary" class="round-dart-summary"><div class="round-dart-chip"><span>DART 1</span><b class="chip-score">—</b></div><div class="round-dart-chip"><span>DART 2</span><b class="chip-score">—</b></div><div class="round-dart-chip"><span>DART 3</span><b class="chip-score">—</b></div><div class="round-total-box"><span>ROUND TOTAL</span><b id="targetRoundTotal">0</b></div></div><div class="throw-inputs">${[1,2,3].map(n=>`<div class="dart-entry" data-entry="${n-1}"><label>DART ${n}</label><input id="g${n}" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="1–10"><button type="button" class="commit-dart" data-target-commit="${n-1}" title="Commit Dart ${n}">✓</button></div>`).join('')}</div><div class="dart-keypad target-keypad">${[1,2,3,4,5,6,7,8,9,0].map(n=>`<button type="button" data-target-key="${n}">${n}</button>`).join('')}<button type="button" data-target-key="back">⌫</button><button type="button" data-target-key="clear">Clear</button></div><div class="throw-actions"><button type="button" class="primary-btn" id="submitTarget">Add round →</button></div>`;
+  $$('#targetInput .throw-inputs input').forEach((input,i)=>{input.addEventListener('focus',()=>{targetActiveThrow=i;$$('#targetInput .dart-entry').forEach((e,j)=>e.classList.toggle('active',j===i))});input.addEventListener('input',()=>{const raw=input.value.replace(/\D/g,'').slice(0,2);if(input.value!==raw)input.value=raw;targetDraftThrows[i]=raw===''?null:Number(raw);input.classList.add('pending-throw');updateTargetRoundTotal()});input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitTargetThrow(i)}})});
+  $$('#targetInput [data-target-commit]').forEach(btn=>btn.addEventListener('click',()=>{const i=Number(btn.dataset.targetCommit);targetActiveThrow=i;commitTargetThrow(i)}));
+  $$('#targetInput [data-target-key]').forEach(btn=>btn.addEventListener('click',()=>{const k=btn.dataset.targetKey,input=$('#g'+(targetActiveThrow+1));if(!input)return;if(k==='back')input.value=input.value.slice(0,-1);else if(k==='clear')input.value='';else if(input.value.length<2)input.value+=k;const raw=input.value.replace(/\D/g,'').slice(0,2);input.value=raw;targetDraftThrows[targetActiveThrow]=raw===''?null:Number(raw);input.classList.add('pending-throw');updateTargetRoundTotal();input.focus()}));
+  $('#submitTarget').onclick=submitTarget;renderTargetVisual();updateTargetRoundTotal();renderTargetHistory();
+}
+function submitTarget(){
+  for(let i=0;i<3;i++){const raw=$('#g'+(i+1)).value.trim();if(raw!==''&&!Number.isInteger(targetThrowSelection[i])){if(!commitTargetThrow(i))return}}
+  const vals=[0,1,2].map(i=>Number.isInteger(targetThrowSelection[i])?targetThrowSelection[i]:0);
+  const p=target.players[target.current];const total=vals.reduce((a,b)=>a+b,0);p.total+=total;p.roundsPlayed=(p.roundsPlayed||0)+1;p.roundScores=p.roundScores||[];p.roundScores[target.round-1]=total;target.history.push({player:p.name,round:target.round,throws:vals,total});target.current=(target.current+1)%target.players.length;
+  if(target.current===0){if(target.round===target.rounds){const winner=[...target.players].sort((a,b)=>b.total-a.total)[0];renderTarget();broadcast();setTimeout(()=>toast(`🏆 ${winner.name} wins with ${winner.total}!`),100);return}target.round++}renderTarget();broadcast();
+}
+function renderTargetHistory(){const h=[...target.history].reverse().slice(0,10);$('#targetHistory').innerHTML=h.length?h.map(x=>`<div class="history-row"><span>R${x.round} · ${esc(x.player)}</span><strong>+${x.total}</strong></div>`).join(''):'<div class="muted">No target rounds yet.</div>'}
+$('#startTarget').onclick=()=>{if(target.players.length<1)return toast('Add at least one player');target={active:true,round:1,rounds:target.rounds||10,current:0,players:target.players.map(p=>({...p,total:0,roundsPlayed:0,roundScores:[]})),history:[]};$('#targetSetup').classList.add('hidden');$('#targetGame').classList.remove('hidden');renderTarget();broadcast()};
+$('#newTarget').onclick=()=>{target.active=false;$('#targetGame').classList.add('hidden');$('#targetSetup').classList.remove('hidden');renderPicker('targetPlayerPicker',target.players.map(p=>p.id));resetTargetThrowDraft()};
+$('#undoTarget').onclick=()=>{if(!target.history.length)return;const x=target.history.pop(),p=target.players.find(p=>p.name===x.player);if(!p)return;p.total-=x.total;p.roundsPlayed=Math.max(0,(p.roundsPlayed||0)-1);if(p.roundScores)p.roundScores[x.round-1]=null;target.round=x.round;target.current=target.players.findIndex(p=>p.name===x.player);renderTarget();broadcast()};
+$$('#targetRoundOptions .score-option').forEach(b=>b.onclick=()=>{$$('#targetRoundOptions .score-option').forEach(x=>x.classList.remove('active'));b.classList.add('active');target.rounds=Number(b.dataset.targetRounds)});
+
+$('#resetApp').onclick=()=>{if(confirm('Reset the current game?')){darts.active=false;baseball.active=false;target.active=false;$('#dartsGame,#baseballGame,#targetGame').forEach(x=>x.classList.add('hidden'));$('#dartsSetup,#baseballSetup,#targetSetup').forEach(x=>x.classList.remove('hidden'));broadcast();toast('Game reset')}};
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.classList.remove('show'),2200)}function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
-function state(){return JSON.stringify({darts,baseball})}
-function applyState(raw){try{const s=typeof raw==='string'?JSON.parse(raw):raw;if(s.darts){darts=s.darts; if(darts.active){$('#dartsSetup').classList.add('hidden');$('#dartsGame').classList.remove('hidden');renderDarts()}}if(s.baseball){baseball=s.baseball;if(baseball.active){$('#baseballSetup').classList.add('hidden');$('#baseballGame').classList.remove('hidden');renderBaseball()}}}catch(e){console.warn(e)}}
+function state(){return JSON.stringify({darts,baseball,target})}
+function applyState(raw){try{const s=typeof raw==='string'?JSON.parse(raw):raw;if(s.darts){darts=s.darts; if(darts.active){$('#dartsSetup').classList.add('hidden');$('#dartsGame').classList.remove('hidden');renderDarts()}}if(s.baseball){baseball=s.baseball;if(baseball.active){$('#baseballSetup').classList.add('hidden');$('#baseballGame').classList.remove('hidden');renderBaseball()}}if(s.target){target=s.target;if(target.active){$('#targetSetup').classList.add('hidden');$('#targetGame').classList.remove('hidden');renderTarget()}}}catch(e){console.warn(e)}}
 function firebaseReady(){return window.firebase && window.THROW_FIREBASE_CONFIG && window.THROW_FIREBASE_CONFIG.apiKey && !String(window.THROW_FIREBASE_CONFIG.apiKey).startsWith('PASTE_') && window.THROW_FIREBASE_CONFIG.databaseURL && !String(window.THROW_FIREBASE_CONFIG.databaseURL).includes('YOUR_PROJECT')}
 function setLiveStatus(msg){const el=$('#roomStatus');if(el)el.textContent=msg}
-function state(){return JSON.stringify({darts,baseball})}
-function applyState(raw){try{const s=typeof raw==='string'?JSON.parse(raw):raw;if(s.darts){darts=s.darts;if(darts.active){$('#dartsSetup').classList.add('hidden');$('#dartsGame').classList.remove('hidden');renderDarts()}}if(s.baseball){baseball=s.baseball;if(baseball.active){$('#baseballSetup').classList.add('hidden');$('#baseballGame').classList.remove('hidden');renderBaseball()}}}catch(e){console.warn(e)}}
 function initFirebase(){
   if(!firebaseReady()){setLiveStatus('Firebase config is missing or still contains placeholders.');return false}
   if(!window.firebase){setLiveStatus('Firebase SDK did not load. Check your internet connection.');return false}
@@ -319,10 +444,10 @@ function showRoom(id){
 $('#shareRoom').onclick=()=>{if(!hostMode)return toast('This phone is a viewer.');if(roomRef&&roomId)showRoom(roomId);else createLiveRoom()};
 $('#closeRoom').onclick=()=>$('#roomModal').classList.add('hidden');
 $('#copyRoomLink').onclick=async()=>{const link=location.origin+location.pathname+'?room='+encodeURIComponent(roomId);try{await navigator.clipboard.writeText(link);toast('Room link copied')}catch(e){toast(link)}};
-if(!hostMode){document.body.insertAdjacentHTML('afterbegin','<div class="viewer-banner">📱 <b>Live viewer mode</b> — this phone is following the host scoreboard. Scoring controls are disabled here.</div>');$('#dartsSetup').classList.add('hidden');$('#baseballSetup').classList.add('hidden');}
+if(!hostMode){document.body.insertAdjacentHTML('afterbegin','<div class="viewer-banner">📱 <b>Live viewer mode</b> — this phone is following the host scoreboard. Scoring controls are disabled here.</div>');$('#dartsSetup').classList.add('hidden');$('#baseballSetup').classList.add('hidden');$('#targetSetup').classList.add('hidden');}
 initFirebase();
 if(hostMode)makeDartboard();
-renderPlayers();renderPicker('dartsPlayerPicker',[]);renderPicker('baseballPlayerPicker',[]);
+renderPlayers();renderPicker('dartsPlayerPicker',[]);renderPicker('baseballPlayerPicker',[]);renderPicker('targetPlayerPicker',[]);
 
 // ---------- THROW LEAGUE ----------
 const LEAGUE_DEFAULT_RATING = 1000;
