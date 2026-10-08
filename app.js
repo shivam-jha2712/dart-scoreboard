@@ -26,7 +26,7 @@ function polarPoint(cx,cy,r,deg){const a=(deg-90)*Math.PI/180;return [cx+r*Math.
 function sectorPath(cx,cy,r1,r2,a0,a1){const p1=polarPoint(cx,cy,r2,a0),p2=polarPoint(cx,cy,r2,a1),p3=polarPoint(cx,cy,r1,a1),p4=polarPoint(cx,cy,r1,a0);const large=Math.abs(a1-a0)>180?1:0;return `M ${p1[0]} ${p1[1]} A ${r2} ${r2} 0 ${large} 1 ${p2[0]} ${p2[1]} L ${p3[0]} ${p3[1]} A ${r1} ${r1} 0 ${large} 0 ${p4[0]} ${p4[1]} Z`}
 function dartScoreTarget(score){
   if(score===50)return {ring:'bull',r:0,angle:0,label:'Bullseye'};
-  if(score===25)return {ring:'outer-bull',r:44,angle:0,label:'Outer bull'};
+  if(score===25)return {ring:'outer-bull',r:34,angle:35,label:'Outer bull'};
   let multiplier=1,number=score;
   if(score>=1&&score<=20){multiplier=1;number=score}
   else if(score%3===0&&score/3<=20){multiplier=3;number=score/3}
@@ -38,29 +38,33 @@ function dartScoreTarget(score){
 }
 function makeDartElement(score,index){
   const t=dartScoreTarget(score);
-  const angle=t.angle+(index-1)*1.2;
-  const a=(angle-90)*Math.PI/180;
+  const radialDeg=t.angle + (index-1)*2.0;
+  const a=(radialDeg-90)*Math.PI/180;
   const x=300+Math.cos(a)*t.r;
   const y=300+Math.sin(a)*t.r;
-  const colors=[['#f94144','#9d0e16'],['#ffcc33','#a66b00'],['#71e35a','#2e8d24']][index%3];
-  return `<div class="planted-dart dart-fly-${index+1}" style="--x:${(x/6).toFixed(3)}%;--y:${(y/6).toFixed(3)}%;--dart-angle:${(angle+90).toFixed(2)}deg;--flight:${colors[0]};--flight-dark:${colors[1]};" data-score="${score}">
-    <div class="dart-shadow"></div>
-    <div class="dart-flight"><i></i><i></i></div>
-    <div class="dart-shaft"></div>
-    <div class="dart-barrel"><i></i><i></i><i></i><i></i><i></i></div>
-    <div class="dart-point"></div>
-    <span class="dart-score-badge">${score}</span>
+  const left=(x/600*100).toFixed(4);
+  const top=(y/600*100).toFixed(4);
+  const src=index===1?'dart-red.png':'dart-yellow.png';
+  const label=`${score}`;
+  // The source image is photographed horizontally with its steel point on the LEFT.
+  // Therefore the point is the exact anchor and the dart body extends radially OUTWARD.
+  const cssAngle=(radialDeg-90).toFixed(2);
+  return `<div class="planted-dart-real dart-${index+1}" data-score="${score}" style="--x:${left}%;--y:${top}%;--rot:${cssAngle}deg;--delay:${(index*.07).toFixed(2)}s">
+    <div class="dart-real-shadow"></div>
+    <img src="${src}" alt="${label} dart" draggable="false">
+    <span class="dart-score-badge">${label}</span>
   </div>`;
 }
 function renderBoardDarts(){
   const board=$('#dartboardVisual'); if(!board)return;
-  let layer=board.querySelector('.planted-darts-layer');
+  let layer=board.querySelector('.planted-darts-real-layer');
   if(layer)layer.remove();
-  layer=document.createElement('div');layer.className='planted-darts-layer';
-  layer.innerHTML=throwSelection.map((v,i)=>Number.isInteger(v)?makeDartElement(v,i):'').join('');
-  board.querySelector('.real-board-wrap')?.appendChild(layer);
+  layer=document.createElement('div');
+  layer.className='planted-darts-real-layer';
+  // Only committed throws live in throwSelection. Draft typing never reaches this layer.
+  layer.innerHTML=[0,1,2].map(i=>Number.isInteger(throwSelection[i])?makeDartElement(throwSelection[i],i):'').join('');
+  board.appendChild(layer);
 }
-
 function makeDartboard(){
   const el=$('#dartboardVisual'); if(!el)return;
   const nums=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
