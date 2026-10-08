@@ -53,21 +53,70 @@ function renderBoardDarts(){
 function makeDartboard(){
   const el=$('#dartboardVisual'); if(!el)return;
   const nums=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
-  const cx=300,cy=300,R=286;
-  let svg=`<svg class="dartboard-svg" viewBox="0 0 600 600" aria-label="Interactive darts board"><defs><radialGradient id="boardFace" cx="50%" cy="45%"><stop offset="0" stop-color="#29303c"/><stop offset="1" stop-color="#090c12"/></radialGradient><filter id="boardShadow"><feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#000" flood-opacity=".55"/></filter></defs><circle cx="300" cy="300" r="292" fill="#05070b" filter="url(#boardShadow)"/><circle cx="300" cy="300" r="286" fill="url(#boardFace)" stroke="#687080" stroke-width="5"/>`;
+  const cx=300,cy=300,R=276;
+  let svg=`<svg class="dartboard-svg" viewBox="0 0 600 600" aria-label="Interactive darts board">
+    <defs>
+      <radialGradient id="boardBase" cx="42%" cy="36%" r="70%">
+        <stop offset="0" stop-color="#30353d"/><stop offset=".52" stop-color="#15191f"/><stop offset="1" stop-color="#07090d"/>
+      </radialGradient>
+      <linearGradient id="metalRim" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#e1e5e8"/><stop offset=".18" stop-color="#69717c"/><stop offset=".48" stop-color="#171b21"/><stop offset=".72" stop-color="#aab0b8"/><stop offset="1" stop-color="#2a2f36"/>
+      </linearGradient>
+      <linearGradient id="cream" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5f0e5"/><stop offset=".55" stop-color="#ddd7cb"/><stop offset="1" stop-color="#aaa79f"/></linearGradient>
+      <linearGradient id="blackSisal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#252a31"/><stop offset=".55" stop-color="#0e1217"/><stop offset="1" stop-color="#05070a"/></linearGradient>
+      <linearGradient id="redWire" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5b55"/><stop offset=".5" stop-color="#d51f2c"/><stop offset="1" stop-color="#7b111a"/></linearGradient>
+      <linearGradient id="greenWire" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c8ff62"/><stop offset=".5" stop-color="#77cf27"/><stop offset="1" stop-color="#397c18"/></linearGradient>
+      <filter id="boardShadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="18" stdDeviation="14" flood-color="#000" flood-opacity=".72"/></filter>
+      <filter id="sisal" x="-10%" y="-10%" width="120%" height="120%">
+        <feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="3" seed="8" result="noise"/>
+        <feColorMatrix in="noise" values=".6 0 0 0 0  0 .6 0 0 0  0 0 .6 0 0  0 0 0 .25 0"/>
+        <feBlend in="SourceGraphic" mode="multiply"/>
+      </filter>
+      <filter id="softGlow"><feGaussianBlur stdDeviation="3"/></filter>
+    </defs>
+    <circle cx="300" cy="300" r="292" fill="#020304" filter="url(#boardShadow)"/>
+    <circle cx="300" cy="300" r="288" fill="url(#metalRim)" stroke="#090b0e" stroke-width="5"/>
+    <circle cx="300" cy="300" r="279" fill="#11151b" stroke="#727b87" stroke-width="3"/>
+    <circle cx="300" cy="300" r="273" fill="url(#boardBase)" stroke="#030507" stroke-width="3"/>
+    <circle cx="300" cy="300" r="267" fill="none" stroke="#5d646d" stroke-width="2" opacity=".7"/>`;
+
   for(let i=0;i<20;i++){
     const a0=i*18-9,a1=i*18+9;
-    const fill=i%2?'#151b24':'#252d38';
-    svg+=`<path class="board-wedge" data-seg="${nums[i]}" d="${sectorPath(cx,cy,42,R,a0,a1)}" fill="${fill}" stroke="#090c12" stroke-width="2"/>`;
-    svg+=`<path d="${sectorPath(cx,cy,105,126,a0,a1)}" fill="${i%2?'#151b24':'#f2eee5'}" opacity=".98"/>`;
-    svg+=`<path d="${sectorPath(cx,cy,126,151,a0,a1)}" fill="#cfd4da" opacity=".92"/>`;
-    svg+=`<path d="${sectorPath(cx,cy,151,205,a0,a1)}" fill="${i%2?'#151b24':'#f2eee5'}" opacity=".98"/>`;
-    svg+=`<path d="${sectorPath(cx,cy,205,225,a0,a1)}" fill="#cfd4da" opacity=".92"/>`;
-    svg+=`<path d="${sectorPath(cx,cy,225,258,a0,a1)}" fill="${i%2?'#171d26':'#f2eee5'}" opacity=".98"/>`;
-    svg+=`<path d="${sectorPath(cx,cy,258,R,a0,a1)}" fill="#090c12" opacity=".98"/>`;
+    const light=i%2===0;
+    const outer=light?'url(#cream)':'url(#blackSisal)';
+    const inner=light?'url(#cream)':'url(#blackSisal)';
+    // Full wedge is the click target; the decorative scoring bands sit above it.
+    svg+=`<path class="board-wedge" data-seg="${nums[i]}" d="${sectorPath(cx,cy,43,264,a0,a1)}" fill="${outer}" stroke="#090b0e" stroke-width="2.2"/>`;
+    svg+=`<path d="${sectorPath(cx,cy,43,116,a0,a1)}" fill="${inner}" filter="url(#sisal)" opacity=".96"/>`;
+    svg+=`<path d="${sectorPath(cx,cy,116,141,a0,a1)}" fill="${light?'#ece7dc':'#171b20'}" stroke="#0b0d11" stroke-width="1"/>`;
+    svg+=`<path d="${sectorPath(cx,cy,141,199,a0,a1)}" fill="${light?'#efe9de':'#11151a'}" filter="url(#sisal)" opacity=".98"/>`;
+    svg+=`<path d="${sectorPath(cx,cy,199,219,a0,a1)}" fill="url(#greenWire)" stroke="#26340f" stroke-width="1"/>`;
+    svg+=`<path d="${sectorPath(cx,cy,219,249,a0,a1)}" fill="${light?'#eee9df':'#12161b'}" filter="url(#sisal)" opacity=".98"/>`;
+    svg+=`<path d="${sectorPath(cx,cy,249,264,a0,a1)}" fill="${i%2?'#11151a':'#eee9df'}" stroke="#080a0e" stroke-width="1"/>`;
+    // Correct scoring ring colors: doubles at the outer ring, triples at the inner ring.
+    svg+=`<path d="${sectorPath(cx,cy,116,141,a0,a1)}" fill="${i%2?'#171b20':'#ece7dc'}"/>`;
+    svg+=`<path d="${sectorPath(cx,cy,199,219,a0,a1)}" fill="${i%2?'#d52a36':'#d52a36'}" opacity=".98"/>`;
+    svg+=`<path d="${sectorPath(cx,cy,249,264,a0,a1)}" fill="${i%2?'#e9e4d9':'#e9e4d9'}" opacity=".96"/>`;
+    // alternating red/green on the two scoring rings, like a real board
+    const ringColor=i%2?'#c92532':'#79c92a';
+    svg+=`<path d="${sectorPath(cx,cy,116,141,a0,a1)}" fill="${ringColor}"/>`;
+    svg+=`<path d="${sectorPath(cx,cy,199,219,a0,a1)}" fill="${i%2?'#78c92a':'#c92532'}"/>`;
     const lp=polarPoint(cx,cy,268,i*18); svg+=`<text x="${lp[0]}" y="${lp[1]+7}" class="board-number" text-anchor="middle">${nums[i]}</text>`;
   }
-  svg+=`<circle cx="300" cy="300" r="225" fill="none" stroke="#e6e8eb" stroke-width="4"/><circle cx="300" cy="300" r="205" fill="none" stroke="#b9f34a" stroke-width="20"/><circle cx="300" cy="300" r="151" fill="none" stroke="#f25b5b" stroke-width="20"/><circle cx="300" cy="300" r="126" fill="none" stroke="#e6e8eb" stroke-width="4"/><circle cx="300" cy="300" r="42" fill="#e7e9eb" stroke="#737b88" stroke-width="4"/><circle cx="300" cy="300" r="27" fill="#b9f34a" stroke="#0b0e13" stroke-width="3"/><circle cx="300" cy="300" r="13" fill="#e84e4e"/><text x="300" y="305" class="bull-label" text-anchor="middle">BULL</text></svg>`;
+  // Wire spider: subtle silver lines over the sisal.
+  for(let i=0;i<20;i++){
+    const a=i*18-9; const p=polarPoint(cx,cy,264,a); svg+=`<line x1="300" y1="300" x2="${p[0]}" y2="${p[1]}" stroke="#c7ccd1" stroke-width="2" opacity=".68"/>`;
+  }
+  svg+=`<circle cx="300" cy="300" r="219" fill="none" stroke="#15191e" stroke-width="3"/>
+    <circle cx="300" cy="300" r="199" fill="none" stroke="#bfc5cb" stroke-width="2" opacity=".75"/>
+    <circle cx="300" cy="300" r="141" fill="none" stroke="#11151a" stroke-width="3"/>
+    <circle cx="300" cy="300" r="116" fill="none" stroke="#c2c7cc" stroke-width="2" opacity=".7"/>
+    <circle cx="300" cy="300" r="43" fill="#15191f" stroke="#aeb4bc" stroke-width="4"/>
+    <circle cx="300" cy="300" r="29" fill="url(#greenWire)" stroke="#101318" stroke-width="3"/>
+    <circle cx="300" cy="300" r="15" fill="#d82b36" stroke="#6f1019" stroke-width="3"/>
+    <text x="300" y="305" class="bull-label" text-anchor="middle">BULL</text>
+    <circle cx="300" cy="300" r="270" fill="none" stroke="#e7ebef" stroke-width="1" opacity=".28"/>
+  </svg>`;
   el.innerHTML=`${svg}<div class="dartboard-hint">Tap a scoring area · darts appear where you scored</div><div class="thrown-darts-layer"></div>`;
   $$('#dartboardVisual .board-wedge').forEach(b=>b.addEventListener('click',()=>setThrow(activeThrow,Number(b.dataset.seg))));
   renderBoardDarts();
