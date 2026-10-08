@@ -39,3 +39,48 @@
 .thrown-dart .dart-tip{right:-7px;top:7px;border-top-width:5px;border-bottom-width:5px;border-left-width:14px;border-left-color:#dce1e5;filter:drop-shadow(2px 2px 1px #000);}
 .thrown-dart b{left:6px;top:-22px;font-size:9px;background:#0a0d12e8;border-color:#ffffff30;box-shadow:0 3px 8px #0008;}
 @keyframes dartLand{0%{opacity:0;transform:translate(-50%,-50%) rotate(var(--dart-angle)) scale(.65) translateY(-16px)}70%{opacity:1;transform:translate(-50%,-50%) rotate(var(--dart-angle)) scale(1.05) translateY(1px)}100%{opacity:1;transform:translate(-50%,-50%) rotate(var(--dart-angle)) scale(1) translateY(0)}}
+/* V9 — mockup-level board and genuinely 3D-looking darts */
+.visual-throw-layout{grid-template-columns:minmax(340px,560px) minmax(0,1fr);gap:34px}
+.dartboard-visual{max-width:560px;background:radial-gradient(circle at 38% 28%,#4a5058 0,#20262e 38%,#090c11 72%,#030405 100%);box-shadow:0 34px 90px #000e,0 0 0 8px #0a0d12,0 0 0 12px #737c87,0 0 0 15px #171b21;overflow:visible}
+.dartboard-visual:after{content:"";position:absolute;inset:18px;border-radius:50%;pointer-events:none;z-index:4;box-shadow:inset 0 8px 18px #fff2,inset 0 -18px 28px #0008;mix-blend-mode:screen;opacity:.5}
+.dartboard-svg{overflow:visible;filter:drop-shadow(0 12px 8px #0009)}
+.board-wedge{cursor:pointer;transition:filter .18s ease,opacity .18s ease}
+.board-wedge:hover{filter:brightness(1.18) saturate(1.12)}
+.board-number{font-family:'Space Grotesk',sans-serif;font-size:25px;font-weight:900;fill:#fff;paint-order:stroke;stroke:#07090c;stroke-width:5px;stroke-linejoin:round}
+.ring-label{font-family:'Space Grotesk',sans-serif;font-size:8px;font-weight:900;letter-spacing:.24em;fill:#fff;opacity:.45;paint-order:stroke;stroke:#11151a;stroke-width:3px}
+.triple-label{transform:translateY(-3px)}
+.double-label{transform:translateY(3px)}
+.bull-label{font:900 9px 'Space Grotesk',sans-serif;fill:#fff;letter-spacing:.08em;paint-order:stroke;stroke:#11151a;stroke-width:2px}
+.thrown-darts-layer{display:none}
+.thrown-darts-svg-layer{pointer-events:none;overflow:visible}
+.dart-3d{opacity:0;transform-origin:0 0;animation:dartStuck .48s cubic-bezier(.16,.88,.24,1) var(--dart-delay) both}
+.dart-3d .dart-score-label{font:900 9px 'Space Grotesk',sans-serif;fill:#fff;letter-spacing:.02em}
+.dart-fly-1 .dart-score-label{fill:#ffb0b5}.dart-fly-2 .dart-score-label{fill:#ffe7a0}.dart-fly-3 .dart-score-label{fill:#caffbf}
+@keyframes dartStuck{
+  0%{opacity:0;transform:translate(var(--x,0),var(--y,0)) rotate(var(--r,0)) scale(.72)}
+  65%{opacity:1;transform:translate(var(--x,0),var(--y,0)) rotate(var(--r,0)) scale(1.04)}
+  100%{opacity:1;transform:translate(var(--x,0),var(--y,0)) rotate(var(--r,0)) scale(1)}
+}
+@media(max-width:800px){.visual-throw-layout{grid-template-columns:1fr;gap:22px}.dartboard-visual{max-width:460px;margin:auto}.ring-label{display:none}}
+.dart-3d{animation-name:dartAppear}
+@keyframes dartAppear{0%{opacity:0;filter:drop-shadow(0 0 0 transparent);transform-box:fill-box;transform-origin:0 0;transform:scale(.72)}65%{opacity:1;filter:drop-shadow(3px 7px 5px #000b);transform:scale(1.06)}100%{opacity:1;filter:drop-shadow(3px 7px 5px #000b);transform:scale(1)}}
+/* Keep the SVG's physical placement/rotation; animate only the landing fade so darts stay planted at their score. */
+.dart-3d{animation-name:dartAppearFixed}
+@keyframes dartAppearFixed{0%{opacity:0;filter:drop-shadow(0 0 0 transparent)}55%{opacity:1;filter:drop-shadow(3px 7px 5px #0009)}100%{opacity:1;filter:drop-shadow(3px 7px 5px #000b)}}
+/* V10 — photorealistic board treatment + clean score-to-dart timing */
+.dartboard-visual{background:#080a0d;border-radius:50%;overflow:visible;box-shadow:0 34px 80px rgba(0,0,0,.7),0 0 0 8px #090c11,0 0 0 11px #707985,0 0 0 14px #1a1e24;}
+.real-board-wrap{position:absolute;inset:0;border-radius:50%;overflow:hidden;isolation:isolate;}
+.real-board-image{position:absolute;inset:-1%;width:102%;height:102%;object-fit:cover;object-position:center;display:block;filter:saturate(.98) contrast(1.06) brightness(.96);transform:scale(1.015);}
+.real-board-wrap:before{content:"";position:absolute;inset:0;border-radius:50%;z-index:2;pointer-events:none;background:radial-gradient(circle at 36% 28%,rgba(255,255,255,.13),transparent 28%),radial-gradient(circle at 70% 82%,rgba(0,0,0,.35),transparent 45%);mix-blend-mode:screen;}
+.real-board-wrap:after{content:"";position:absolute;inset:1.4%;border-radius:50%;z-index:4;pointer-events:none;border:2px solid rgba(255,255,255,.2);box-shadow:inset 0 0 24px rgba(0,0,0,.55),inset 0 4px 8px rgba(255,255,255,.18);}
+.board-glass-highlight{position:absolute;inset:0;border-radius:50%;z-index:3;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.10),transparent 23%,transparent 68%,rgba(0,0,0,.16));mix-blend-mode:screen;}
+.dartboard-hit-layer{position:absolute;inset:0;width:100%;height:100%;z-index:5;overflow:visible;}
+.hit-zone{fill:transparent;stroke:transparent;cursor:pointer;pointer-events:all;}
+.hit-zone:hover{fill:rgba(185,243,74,.08);stroke:rgba(185,243,74,.25);stroke-width:2;}
+.dartboard-svg .hit-zone{pointer-events:all;}
+.thrown-darts-svg-layer{z-index:7;}
+/* Realistic planted darts: long perspective shaft + barrel + flight, with a contact shadow. */
+.dart-3d{filter:drop-shadow(4px 8px 5px rgba(0,0,0,.72));}
+.dart-3d .dart-body{filter:drop-shadow(2px 4px 2px rgba(0,0,0,.6));}
+.dartboard-hint{z-index:10;bottom:10px;}
+@media(max-width:800px){.real-board-image{transform:scale(1.02)} }
