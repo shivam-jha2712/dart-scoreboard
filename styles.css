@@ -300,3 +300,43 @@
 .target-keypad button[data-target-key="0"]{color:#b9f34a}
 .target-keypad button[data-target-key="back"],.target-keypad button[data-target-key="clear"]{color:#ff9da4}
 @media(max-width:800px){.target-visual-layout{grid-template-columns:1fr;gap:22px}.target-dartboard{max-width:460px;margin:auto}.target-board-caption{font-size:8px}}
+
+
+/* V21 — precise tap scoring + comfortable board/control spacing */
+.visual-throw-layout,.baseball-visual-layout,.target-visual-layout{
+  grid-template-columns:minmax(0, min(47vw, 560px)) minmax(320px, 1fr)!important;
+  gap:clamp(20px, 3vw, 36px)!important;
+  align-items:start!important;
+}
+.dartboard-visual{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+.dartboard-svg{touch-action:manipulation;user-select:none;-webkit-user-select:none;}
+.hit-zone{cursor:crosshair;touch-action:manipulation;}
+.throw-panel{min-width:0;width:100%;box-sizing:border-box;}
+.throw-inputs{gap:10px;}
+.dart-entry{min-width:0;}
+.dart-entry input{min-width:0;width:100%;font-size:16px;}
+.dart-keypad{gap:9px;}
+.dart-keypad button,.commit-dart,.throw-actions button{min-height:44px;}
+.dartboard-hint{z-index:95;pointer-events:none;}
+@media(max-width:1000px){
+  .visual-throw-layout,.baseball-visual-layout,.target-visual-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:18px!important;}
+  .dartboard-visual,.baseball-dartboard,.target-dartboard{max-width:100%!important;}
+}
+@media(max-width:760px){
+  .visual-throw-layout,.baseball-visual-layout,.target-visual-layout{grid-template-columns:minmax(0,1fr)!important;gap:24px!important;}
+  .dartboard-visual,.baseball-dartboard,.target-dartboard{width:min(100%,560px)!important;max-width:560px!important;margin:0 auto!important;}
+  .visual-throw-layout > #throwPanel{min-height:0!important;}
+  .throw-panel{padding:16px!important;border-radius:16px;}
+  .throw-inputs{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+  .dart-entry{padding:9px!important;}
+  .dart-entry label{font-size:10px;}
+  .dart-entry input{padding:10px 4px!important;text-align:center;}
+  .commit-dart{min-width:38px!important;width:38px!important;}
+  .dart-keypad{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+  .dart-keypad button{min-height:46px;}
+  .round-dart-summary{gap:8px;}
+}
+
+/* Make the transparent SVG scoring paths reliably tappable on desktop and touch screens. */
+.dartboard-svg path.hit-zone,
+.dartboard-svg circle.hit-zone{pointer-events:all!important;cursor:crosshair;}
